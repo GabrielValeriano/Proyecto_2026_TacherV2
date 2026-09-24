@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react'
+import React, { useState, useEffect, createContext, useContext } from 'react'
 import {
   View,
   Text,
@@ -33,36 +33,38 @@ import {
   where,
   getDocs,
   addDoc,
+  onSnapshot,
+  doc
 } from 'firebase/firestore'
 import { db } from 'src/firebase' // Tu configuración de Firebase
 
-// ==========================================
-// 1. LÓGICA DE RANGOS
-// ==========================================
-const RANKS = [
-  { name: 'Plata', min: 0, icon: Leaf },
-  { name: 'Bronce', min: 500, icon: Zap },
-  { name: 'Oro', min: 2000, icon: Award },
+
+// ASIGNACION DE RANGOS
+
+const ListaDeRangos = [
+  { name: 'Brote', min: 0, icon: Leaf },
+  { name: 'Planta', min: 500, icon: Zap },
+  { name: 'Arbol', min: 2000, icon: Award },
 ]
 
-function getRankForPoints(points = 0) {
-  let currentRank = RANKS[0]
-  for (const r of RANKS) {
-    if (points >= r.min) currentRank = r
+function getRangosParaPuntos(puntos = 0) {
+  let RangoActual = ListaDeRangos[0]
+  for (const r of ListaDeRangos) {
+    if (puntos >= r.min) RangoActual = r
   }
-  return currentRank
+  return RangoActual
 }
 
-function getNextRank(points = 0) {
-  for (const r of RANKS) {
-    if (points < r.min) return r
+function getProximoRango(puntos = 0) {
+  for (const r of ListaDeRangos) {
+    if (puntos < r.min) return r
   }
   return null
 }
 
-// ==========================================
-// 2. CONTEXTO DE APLICACIÓN
-// ==========================================
+
+// CONTEXTO DE APLICACIÓN
+
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -71,10 +73,10 @@ export function useApp() {
   return context
 }
 
-// ==========================================
-// 3. COMPONENTES DE UI AUXILIARES
-// ==========================================
-function TeacherV2Logo({ size = 36, withWordmark = false }) {
+
+// COMPONENTES SECUNDARIOS DE TACHERV2
+
+function TacherV2Logo({ size = 36, withWordmark = false }) {
   return (
     <View className="flex-row items-center gap-2">
       <View
@@ -92,7 +94,7 @@ function TeacherV2Logo({ size = 36, withWordmark = false }) {
   )
 }
 
-function ScreenHeader({ title, onBack }) {
+function ScreenHeader({ title: titulo, onBack }) {
   return (
     <View className="flex-row items-center gap-3 border-b border-gray-200 bg-white px-4 py-3">
       {onBack && (
@@ -100,12 +102,12 @@ function ScreenHeader({ title, onBack }) {
           <ChevronLeft size={24} color="#16a34a" />
         </TouchableOpacity>
       )}
-      <Text className="text-base font-bold text-green-700">{title}</Text>
+      <Text className="text-base font-bold text-green-700">{titulo}</Text>
     </View>
   )
 }
 
-function TextField({ label, icon, value, onChangeText, error, ...props }) {
+function CampoInput({ label, icon, value, onChangeText, error, ...props }) {
   return (
     <View className="gap-1.5">
       {label && (
@@ -125,7 +127,7 @@ function TextField({ label, icon, value, onChangeText, error, ...props }) {
   )
 }
 
-function ErrorBox({ message }) {
+function MensajeError({ message }) {
   if (!message) return null
   return (
     <View className="my-2 rounded-2xl border border-red-300 bg-red-50 p-3">
@@ -136,8 +138,8 @@ function ErrorBox({ message }) {
   )
 }
 
-// BARRA DE NAVEGACIÓN INFERIOR (TAB BAR)
-function BottomNavBar({ activeTab, onTabPress }) {
+// BARRA DE NAVEGACIÓN INFERIOR
+function BarraDeNavegacion({ activeTab, onTabPress }) {
   const tabs = [
     { id: 'home', label: 'Inicio', icon: Home },
     { id: 'reciclar', label: 'Reciclar', icon: Recycle },
@@ -168,25 +170,24 @@ function BottomNavBar({ activeTab, onTabPress }) {
   )
 }
 
-// ==========================================
-// 4. PANTALLAS DE LA APLICACIÓN
-// ==========================================
 
-export function HomeScreen() {
-  const { userData, navigate } = useApp()
-  const username = userData?.Nombre || 'Usuario'
-  const points = userData?.Puntos || 0
-  const rank = getRankForPoints(points)
-  const next = getNextRank(points)
-  const RankIcon = rank.icon
+// PANTALLAS DE LA APLICACIÓN
 
-  const progress = next
+export function PantallaHome() {
+  const { userData, cerrarSesion, navigate } = useApp()
+  const NombreUsuario = userData?.Nombre || 'Usuario'
+  const PuntosActuales = userData?.Puntos || 0
+  const RangoActual = getRangosParaPuntos(PuntosActuales)
+  const ProximoRango = getProximoRango(PuntosActuales)
+  const IconoRango = RangoActual.icon
+
+  const Progreso = ProximoRango
     ? Math.min(
         100,
-        Math.round(((points - rank.min) / (next.min - rank.min)) * 100),
+        Math.round(((PuntosActuales - RangoActual.min) / (ProximoRango.min - RangoActual.min)) * 100),
       )
     : 100
-  const faltan = next ? next.min - points : 0
+  const faltan = ProximoRango ? ProximoRango.min - PuntosActuales : 0
 
   return (
     <View className="flex-1 bg-green-50/30">
@@ -194,18 +195,17 @@ export function HomeScreen() {
         <View className="flex-row items-center justify-between">
           <View className="gap-0.5">
             <Text className="text-xs font-medium uppercase tracking-wider text-green-700">
-              Hola de nuevo
+              Bienvenido
             </Text>
             <Text className="text-xl font-bold tracking-tight text-gray-900">
-              @{username}
+              @{NombreUsuario}
             </Text>
           </View>
           <View className="rounded-2xl bg-green-100 p-2 border border-green-200">
-            <TeacherV2Logo size={36} />
+            <TacherV2Logo size={36} />
           </View>
         </View>
 
-        {/* Hero de Puntos - Verde Primario */}
         <View className="relative overflow-hidden rounded-3xl bg-green-600 p-6 shadow-md">
           <View className="absolute -right-6 -top-6">
             <Recycle size={176} color="rgba(255,255,255,0.15)" />
@@ -217,13 +217,13 @@ export function HomeScreen() {
                 Tus puntos
               </Text>
               <Text className="mt-1 text-5xl font-extrabold tracking-tight text-white">
-                {points.toLocaleString('es-AR')}
+                {PuntosActuales.toLocaleString('es-AR')}
               </Text>
 
               <View className="mt-4 flex-row items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 self-start">
-                <RankIcon size={14} color="#FFF" />
+                <IconoRango size={14} color="#FFF" />
                 <Text className="text-xs font-medium text-white">
-                  Rango {userData?.Rango || rank.name}
+                  Rango {userData?.Rango || RangoActual.name}
                 </Text>
               </View>
             </View>
@@ -232,12 +232,12 @@ export function HomeScreen() {
               <View className="h-2 w-full overflow-hidden rounded-full bg-white/20">
                 <View
                   className="h-full rounded-full bg-yellow-400"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${Progreso}%` }}
                 />
               </View>
               <Text className="text-xs text-green-100">
-                {next
-                  ? `Te faltan ${faltan.toLocaleString('es-AR')} puntos para llegar a ${next.name}`
+                {ProximoRango
+                  ? `Te faltan ${faltan.toLocaleString('es-AR')} puntos para llegar a ${ProximoRango.name}`
                   : '¡Alcanzaste el rango máximo! 🌳'}
               </Text>
             </View>
@@ -285,7 +285,7 @@ export function HomeScreen() {
           </Text>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => navigate('login')}
+            onPress={cerrarSesion}
             className="mt-4 rounded-xl border border-green-300 bg-white px-4 py-2 self-start"
           >
             <Text className="text-xs font-medium text-green-700">
@@ -295,8 +295,7 @@ export function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Barra de pestañas en la parte inferior */}
-      <BottomNavBar
+      <BarraDeNavegacion
         activeTab="home"
         onTabPress={(id, label) => {
           if (id === 'home') navigate('home')
@@ -307,59 +306,60 @@ export function HomeScreen() {
   )
 }
 
-export function RegisterScreen() {
+export function PantallaRegister() {
   const { navigate, setPantallaActual } = useApp()
-  const [regEmail, setRegEmail] = useState('')
-  const [regUsuario, setRegUsuario] = useState('')
-  const [regPassword, setRegPassword] = useState('')
-  const [regConfirmPass, setRegConfirmPass] = useState('')
-  const [errorRegistro, setErrorRegistro] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [RegistroEmail, setRegistroEmail] = useState('')
+  const [RegistroNombreUsuario, setRegistroNombreUsuario] = useState('')
+  const [RegistroContraseña, setRegistroContraseña] = useState('')
+  const [RegistroConfirmarContra, setRegistroConfirmacionContra] = useState('')
+  const [ErrorRegistro, setErrorRegistro] = useState('')
+  const [Loading, setLoading] = useState(false)
 
-  const ejecutarRegistro = async () => {
+  const EjecutarRegistro = async () => {
     setErrorRegistro('')
 
-    if (!regEmail || !regUsuario || !regPassword || !regConfirmPass) {
+    if (!RegistroEmail || !RegistroNombreUsuario || !RegistroContraseña || !RegistroConfirmarContra) {
       return setErrorRegistro('Todos los campos son obligatorios.')
     }
 
-    if (regPassword !== regConfirmPass) {
+    if (RegistroContraseña !== RegistroConfirmarContra) {
       return setErrorRegistro('Las contraseñas no coinciden.')
     }
 
     setLoading(true)
     try {
-      const usuariosRef = collection(db, 'USUARIOS')
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
 
-      const qUser = query(usuariosRef, where('Nombre', '==', regUsuario.trim()))
-      const snapUser = await getDocs(qUser)
+      const qNombreUsuario = query(ColeccionUsuarios, where('Nombre', '==', RegistroNombreUsuario.trim()))
+      const snapUser = await getDocs(qNombreUsuario)
       if (!snapUser.empty) {
         setLoading(false)
         return setErrorRegistro('Este nombre de usuario ya existe.')
       }
 
-      const qEmail = query(usuariosRef, where('Email', '==', regEmail.trim()))
+      const qEmail = query(ColeccionUsuarios, where('Email', '==', RegistroEmail.trim()))
       const snapEmail = await getDocs(qEmail)
       if (!snapEmail.empty) {
         setLoading(false)
         return setErrorRegistro('Este email ya se encuentra registrado.')
       }
 
-      await addDoc(usuariosRef, {
-        Nombre: regUsuario.trim(),
-        Email: regEmail.trim(),
-        Contraseña: regPassword,
+      await addDoc(ColeccionUsuarios, {
+        Nombre: RegistroNombreUsuario.trim(),
+        Email: RegistroEmail.trim(),
+        Contraseña: RegistroContraseña,
         Fecha: new Date().toISOString(),
         Puntos: 0,
-        Rango: 'Plata',
+        Rango: 'Brote',
         DNI: 'N/A',
       })
 
-      setRegEmail('')
-      setRegUsuario('')
-      setRegPassword('')
-      setRegConfirmPass('')
+      setRegistroEmail('')
+      setRegistroNombreUsuario('')
+      setRegistroContraseña('')
+      setRegistroConfirmacionContra('')
       setPantallaActual('confirm-scan')
+      
     } catch (err) {
       setErrorRegistro('Error al registrar: ' + err.message)
     } finally {
@@ -376,49 +376,49 @@ export function RegisterScreen() {
             Creá tu cuenta de TeacherV2 para empezar a sumar puntos por cada reciclaje.
           </Text>
 
-          <TextField
-            label="Correo institucional"
+          <CampoInput
+            label="Correo electronico"
             keyboardType="email-address"
             placeholder="nombre@escuela.uba.ar"
-            value={regEmail}
-            onChangeText={(t) => { setErrorRegistro(''); setRegEmail(t); }}
+            value={RegistroEmail}
+            onChangeText={(t) => { setErrorRegistro(''); setRegistroEmail(t); }}
             autoCapitalize="none"
             icon={<Mail size={16} color="#16a34a" />}
           />
-          <TextField
+          <CampoInput
             label="Nombre de usuario"
             placeholder="tu.usuario"
-            value={regUsuario}
-            onChangeText={(t) => { setErrorRegistro(''); setRegUsuario(t); }}
+            value={RegistroNombreUsuario}
+            onChangeText={(t) => { setErrorRegistro(''); setRegistroNombreUsuario(t); }}
             autoCapitalize="none"
             icon={<AtSign size={16} color="#16a34a" />}
           />
-          <TextField
+          <CampoInput
             label="Contraseña"
             secureTextEntry
             placeholder="Mínimo 8 caracteres"
-            value={regPassword}
-            onChangeText={(t) => { setErrorRegistro(''); setRegPassword(t); }}
+            value={RegistroContraseña}
+            onChangeText={(t) => { setErrorRegistro(''); setRegistroContraseña(t); }}
             icon={<Lock size={16} color="#16a34a" />}
           />
-          <TextField
+          <CampoInput
             label="Verificar contraseña"
             secureTextEntry
             placeholder="Repetí tu contraseña"
-            value={regConfirmPass}
-            onChangeText={(t) => { setErrorRegistro(''); setRegConfirmPass(t); }}
+            value={RegistroConfirmarContra}
+            onChangeText={(t) => { setErrorRegistro(''); setRegistroConfirmacionContra(t); }}
             icon={<Lock size={16} color="#16a34a" />}
           />
 
-          <ErrorBox message={errorRegistro} />
+          <MensajeError message={ErrorRegistro} />
         </View>
 
-        {loading ? (
+        {Loading ? (
           <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 16 }} />
         ) : (
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={ejecutarRegistro}
+            onPress={EjecutarRegistro}
             className="mt-8 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
           >
             <Text className="font-semibold text-base text-white">
@@ -431,42 +431,44 @@ export function RegisterScreen() {
   )
 }
 
-export function LoginScreen() {
-  const { navigate, setPantallaActual, setUserData } = useApp()
+export function PantallaLogin() {
+  const { navigate, setPantallaActual, setUserDocId } = useApp()
   const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
+  const [loginContraseña, setLoginPassword] = useState('')
   const [errorLogin, setErrorLogin] = useState('')
   const [loading, setLoading] = useState(false)
 
   const ejecutarLogin = async () => {
     setErrorLogin('')
 
-    if (!loginEmail || !loginPassword) {
-      return setErrorLogin('Completá el email y la contraseña.')
+    if (!loginEmail || !loginContraseña) {
+      return setErrorLogin('Completá el email y la contraseña')
     }
 
     setLoading(true)
     try {
-      const usuariosRef = collection(db, 'USUARIOS')
-      const q = query(usuariosRef, where('Email', '==', loginEmail.trim()))
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+      const q = query(ColeccionUsuarios, where('Email', '==', loginEmail.trim()))
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
         setErrorLogin('El email ingresado no existe en la base de datos.')
-      } else {
+      } 
+      else {
         let usuarioEncontrado = null
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data()
-          if (data.Contraseña === loginPassword) {
-            usuarioEncontrado = { id: docSnap.id, ...data }
+          if (data.Contraseña === loginContraseña) {
+            usuarioEncontrado = docSnap.id
           }
         });
 
         if (usuarioEncontrado) {
-          setUserData(usuarioEncontrado)
+          const { setUserDocId, setPantallaActual } = useApp // obtenemos el setter
+          setUserDocId(usuarioEncontrado)
           setPantallaActual('home')
         } else {
-          setErrorLogin('Contraseña incorrecta.')
+          setErrorLogin('Contraseña incorrecta')
         }
       }
     } catch (err) {
@@ -480,11 +482,11 @@ export function LoginScreen() {
     <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-12 bg-white">
       <View className="items-center gap-6">
         <View className="rounded-3xl bg-green-50 p-4 border border-green-200">
-          <TeacherV2Logo size={56} withWordmark />
+          <TacherV2Logo size={56} withWordmark />
         </View>
         <View className="items-center gap-1.5">
           <Text className="text-2xl font-bold tracking-tight text-gray-900 text-center">
-            Reciclá. Sumá puntos. Canjeá.
+            Reciclar Con Un Proposito
           </Text>
           <Text className="text-sm text-gray-500 leading-relaxed text-center">
             Ingresá a tu cuenta para ver tus puntos y canjearlos por productos reales del kiosco.
@@ -493,7 +495,7 @@ export function LoginScreen() {
       </View>
 
       <View className="mt-8 gap-4">
-        <TextField
+        <CampoInput
           label="Cuenta (Email)"
           placeholder="tu.email@escuela.uba.ar"
           value={loginEmail}
@@ -502,16 +504,16 @@ export function LoginScreen() {
           keyboardType="email-address"
           icon={<Mail size={16} color="#16a34a" />}
         />
-        <TextField
+        <CampoInput
           label="Contraseña"
           secureTextEntry
           placeholder="••••••••"
-          value={loginPassword}
+          value={loginContraseña}
           onChangeText={(t) => { setErrorLogin(''); setLoginPassword(t); }}
           icon={<Lock size={16} color="#16a34a" />}
         />
 
-        <ErrorBox message={errorLogin} />
+        <MensajeError message={errorLogin} />
 
         <TouchableOpacity
           activeOpacity={0.7}
@@ -548,7 +550,7 @@ export function LoginScreen() {
   )
 }
 
-export function ConfirmScanScreen() {
+export function PantallaConfirmacionEscanearDNI() {
   const { navigate } = useApp()
 
   return (
@@ -609,7 +611,9 @@ export function ConfirmScanScreen() {
   )
 }
 
-export function PlaceholderScreen({ seccion }) {
+// PANTALLA EN DESARROLLO
+
+export function PantallaEnDesarrollo({ seccion }) {
   const { navigate } = useApp()
 
   return (
@@ -636,21 +640,53 @@ export function PlaceholderScreen({ seccion }) {
   )
 }
 
-// ==========================================
-// 5. APPLICACIÓN PRINCIPAL (ENTRY POINT)
-// ==========================================
-export default function IndexScreen() {
+
+// PANTALLA PRINCIPAL 
+
+export default function PantallaActual() {
   const [pantallaActual, setPantallaActual] = useState('login')
   const [userData, setUserData] = useState(null)
-  const [seccionTemporal, setSeccionTemporal] = useState('')
+  const [SeccionTemporal, setSeccionTemporal] = useState('')
+  const [userDocId, setUserDocId] = useState(null) // Guardamos el ID del documento
 
-  const navigate = (screen) => {
-    if (screen.startsWith('Placeholder:')) {
-      setSeccionTemporal(screen.replace('Placeholder:', '').trim())
+  // ESCUCHADOR EN TIEMPO REAL DE FIRESTORE
+  useEffect(() => {
+    // Si no hay un usuario logueado, no escuchamos nada
+    if (!userDocId) {
+      setUserData(null)
+      return
+    }
+
+    // Creamos la referencia directa al documento del usuario
+    const userRef = doc(db, 'USUARIOS', userDocId)
+
+    // onSnapshot escucha cualquier cambio en vivo
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        // Actualiza el estado de la app automáticamente cuando cambia algo en la BD
+        setUserData({ id: docSnap.id, ...docSnap.data() })
+      }
+    }, (error) => {
+      console.error("Error escuchando cambios en tiempo real:", error)
+    })
+
+    // Limpiamos la suscripción cuando se cierra sesión o cambia el usuario
+    return () => unsubscribe()
+  }, [userDocId])
+
+  const navigate = (pantalla) => {
+    if (pantalla.startsWith('Placeholder:')) {
+      setSeccionTemporal(pantalla.replace('Placeholder:', '').trim())
       setPantallaActual('placeholder')
     } else {
-      setPantallaActual(screen)
+      setPantallaActual(pantalla)
     }
+  }
+
+  const cerrarSesion = () => {
+    setUserDocId(null)
+    setUserData(null)
+    setPantallaActual('login')
   }
 
   return (
@@ -658,6 +694,8 @@ export default function IndexScreen() {
       value={{
         userData,
         setUserData,
+        setUserDocId,
+        cerrarSesion,
         navigate,
         setPantallaActual,
       }}
@@ -665,11 +703,11 @@ export default function IndexScreen() {
       <SafeAreaProvider>
         <SafeAreaView className="flex-1 bg-white">
           <StatusBar barStyle="dark-content" />
-          {pantallaActual === 'login' && <LoginScreen />}
-          {pantallaActual === 'register' && <RegisterScreen />}
-          {pantallaActual === 'home' && <HomeScreen />}
-          {pantallaActual === 'confirm-scan' && <ConfirmScanScreen />}
-          {pantallaActual === 'placeholder' && <PlaceholderScreen seccion={seccionTemporal} />}
+          {pantallaActual === 'login' && <PantallaLogin />}
+          {pantallaActual === 'register' && <PantallaRegister />}
+          {pantallaActual === 'home' && <PantallaHome />}
+          {pantallaActual === 'confirm-scan' && <PantallaConfirmacionEscanearDNI />}
+          {pantallaActual === 'placeholder' && <PantallaEnDesarrollo seccion={SeccionTemporal} />}
         </SafeAreaView>
       </SafeAreaProvider>
     </AppContext.Provider>

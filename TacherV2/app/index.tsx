@@ -17,7 +17,6 @@ import {
   Recycle,
   Mail,
   Lock,
-  AtSign,
   ScanLine,
   ShieldCheck,
   IdCard,
@@ -26,6 +25,8 @@ import {
   Zap,
   Home,
   User,
+  KeyRound,
+  CheckCircle2,
 } from 'lucide-react-native'
 import {
   collection,
@@ -34,13 +35,13 @@ import {
   getDocs,
   addDoc,
   onSnapshot,
-  doc
+  doc,
+  updateDoc
 } from 'firebase/firestore'
-import { db } from 'src/firebase' // Tu configuración de Firebase
-
+import { db } from 'src/firebase'
+import emailjs from '@emailjs/react-native'
 
 // ASIGNACION DE RANGOS
-
 const ListaDeRangos = [
   { name: 'Brote', min: 0, icon: Leaf },
   { name: 'Planta', min: 500, icon: Zap },
@@ -62,9 +63,7 @@ function getProximoRango(puntos = 0) {
   return null
 }
 
-
 // CONTEXTO DE APLICACIÓN
-
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -73,10 +72,8 @@ export function useApp() {
   return context
 }
 
-
-// COMPONENTES SECUNDARIOS DE TACHERV2
-
-function TacherV2Logo({ size = 36, withWordmark = false }) {
+// COMPONENTES SECUNDARIOS DE TEACHERV2
+function TeacherV2Logo({ size = 36, withWordmark = false }) {
   return (
     <View className="flex-row items-center gap-2">
       <View
@@ -138,7 +135,21 @@ function MensajeError({ message }) {
   )
 }
 
-// BARRA DE NAVEGACIÓN INFERIOR
+function BotonGoogle({ label, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      className="h-12 w-full flex-row items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white shadow-xs"
+    >
+      <View className="size-5 items-center justify-center rounded-full bg-red-500">
+        <Text className="text-xs font-bold text-white">G</Text>
+      </View>
+      <Text className="font-semibold text-sm text-gray-700">{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
 function BarraDeNavegacion({ activeTab, onTabPress }) {
   const tabs = [
     { id: 'home', label: 'Inicio', icon: Home },
@@ -170,21 +181,532 @@ function BarraDeNavegacion({ activeTab, onTabPress }) {
   )
 }
 
+// -------------------------------------------------------------
+// NUEVAS PANTALLAS DE AUTENTICACIÓN Y NAVEGACIÓN
+// -------------------------------------------------------------
 
-// PANTALLAS DE LA APLICACIÓN
+// 1. PANTALLA PRINCIPAL BIENVENIDA (LANDING)
+export function PantallaWelcome() {
+  const { navigate } = useApp()
 
+  return (
+    <View className="flex-1 bg-white justify-between px-6 pb-12 pt-16">
+      <View className="items-center gap-6">
+        <View className="rounded-3xl bg-green-50 p-6 border border-green-200">
+          <TeacherV2Logo size={72} withWordmark />
+        </View>
+        <View className="items-center gap-2">
+          <Text className="text-2xl font-bold tracking-tight text-gray-900 text-center">
+            Reciclar Con Un Propósito
+          </Text>
+          <Text className="text-sm text-gray-500 leading-relaxed text-center px-4">
+            Sumá puntos reciclando en tu escuela y canjealos por recompensas increíbles.
+          </Text>
+        </View>
+      </View>
+
+      <View className="gap-3 w-full">
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigate('login-email')}
+          className="h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+        >
+          <Text className="font-semibold text-base text-white">Iniciar Sesión</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigate('register-email')}
+          className="h-12 w-full items-center justify-center rounded-2xl border border-green-600 bg-white shadow-xs"
+        >
+          <Text className="font-semibold text-base text-green-600">Registrarse</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  )
+}
+
+// 2. REGISTRO - PASO 1: INGRESAR EMAIL O GOOGLE
+export function PantallaRegisterEmail() {
+  const { navigate, setFlowData, flowData } = useApp()
+  const [email, setEmail] = useState(flowData?.email || '')
+  const [error, setError] = useState('')
+
+  const handleSiguiente = () => {
+    setError('')
+    if (!email.trim()) {
+      return setError('Por favor ingresá tu correo electrónico.')
+    }
+    setFlowData({ ...flowData, email: email.trim() })
+    navigate('register-password')
+  }
+
+  const handleGoogleRegister = () => {
+    // Simulación de Auth Google
+    navigate('confirm-scan')
+  }
+
+  return (
+    <View className="flex-1 bg-white">
+      <ScreenHeader title="Registrarse" onBack={() => navigate('welcome')} />
+      <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
+        <View className="gap-5">
+          <Text className="text-sm text-gray-500 leading-relaxed">
+            Ingresá tu correo electrónico para comenzar a crear tu cuenta.
+          </Text>
+
+          <CampoInput
+            label="Correo electrónico"
+            keyboardType="email-address"
+            placeholder="nombre@escuela.uba.ar"
+            value={email}
+            onChangeText={(t) => { setError(''); setEmail(t); }}
+            autoCapitalize="none"
+            icon={<Mail size={16} color="#16a34a" />}
+          />
+
+          <MensajeError message={error} />
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleSiguiente}
+            className="h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+          >
+            <Text className="font-semibold text-base text-white">Siguiente</Text>
+          </TouchableOpacity>
+
+          <View className="flex-row items-center gap-3 my-2">
+            <View className="flex-1 h-px bg-gray-200" />
+            <Text className="text-xs text-gray-400 font-medium">o registrarme con</Text>
+            <View className="flex-1 h-px bg-gray-200" />
+          </View>
+
+          <BotonGoogle label="Continuar con Google" onPress={handleGoogleRegister} />
+        </View>
+
+        <View className="flex-row items-center justify-center gap-1 mt-6">
+          <Text className="text-sm text-gray-500">¿Ya tenés cuenta?</Text>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => navigate('login-email')}>
+            <Text className="text-sm font-bold text-green-600">Iniciá sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+// 3. REGISTRO - PASO 2: ASIGNAR CONTRASEÑA
+export function PantallaRegisterPassword() {
+  const { navigate, flowData, setUserDocId } = useApp()
+  const [contra, setContra] = useState('')
+  const [confirmContra, setConfirmContra] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleCompletarRegistro = async () => {
+    setError('')
+    if (!contra || !confirmContra) {
+      return setError('Completá ambos campos de contraseña.')
+    }
+    if (contra !== confirmContra) {
+      return setError('Las contraseñas no coinciden.')
+    }
+
+    setLoading(true)
+    try {
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+
+      const qEmail = query(ColeccionUsuarios, where('Email', '==', flowData.email))
+      const snapEmail = await getDocs(qEmail)
+      if (!snapEmail.empty) {
+        setLoading(false)
+        return setError('Este email ya se encuentra registrado.')
+      }
+
+      const nuevoDocRef = await addDoc(ColeccionUsuarios, {
+        Nombre: flowData.email.split('@')[0],
+        Email: flowData.email,
+        Contraseña: contra,
+        Fecha: new Date().toISOString(),
+        Puntos: 0,
+        Rango: 'Brote',
+        DNI: 'N/A',
+      })
+
+      setUserDocId(nuevoDocRef.id)
+      navigate('confirm-scan')
+    } catch (err) {
+      setError('Error al registrar: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <View className="flex-1 bg-white">
+      <ScreenHeader title="Crear contraseña" onBack={() => navigate('register-email')} />
+      <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
+        <View className="gap-4">
+          <Text className="text-xs text-green-700 font-semibold bg-green-50 p-3 rounded-xl border border-green-200">
+            Registrando cuenta para: {flowData?.email}
+          </Text>
+
+          <CampoInput
+            label="Asignar contraseña"
+            secureTextEntry
+            placeholder="Mínimo 8 caracteres"
+            value={contra}
+            onChangeText={(t) => { setError(''); setContra(t); }}
+            icon={<Lock size={16} color="#16a34a" />}
+          />
+
+          <CampoInput
+            label="Confirmar contraseña"
+            secureTextEntry
+            placeholder="Repetí tu contraseña"
+            value={confirmContra}
+            onChangeText={(t) => { setError(''); setConfirmContra(t); }}
+            icon={<Lock size={16} color="#16a34a" />}
+          />
+
+          <MensajeError message={error} />
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 16 }} />
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleCompletarRegistro}
+            className="mt-8 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+          >
+            <Text className="font-semibold text-base text-white">Siguiente</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    </View>
+  )
+}
+
+// 4. INICIO SESIÓN - PASO 1: INGRESAR EMAIL O GOOGLE
+export function PantallaLoginEmail() {
+  const { navigate, setFlowData, flowData } = useApp()
+  const [email, setEmail] = useState(flowData?.email || '')
+  const [error, setError] = useState('')
+
+  const handleSiguiente = () => {
+    setError('')
+    if (!email.trim()) {
+      return setError('Ingresá tu dirección de email.')
+    }
+    setFlowData({ ...flowData, email: email.trim() })
+    navigate('login-code')
+  }
+
+  const handleGoogleLogin = () => {
+    // Simulación Login con Google
+    navigate('home')
+  }
+
+  return (
+    <View className="flex-1 bg-white">
+      <ScreenHeader title="Iniciar Sesión" onBack={() => navigate('welcome')} />
+      <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
+        <View className="gap-5">
+          <Text className="text-sm text-gray-500 leading-relaxed">
+            Ingresá tu email registrado para iniciar sesión en TeacherV2.
+          </Text>
+
+          <CampoInput
+            label="Correo electrónico"
+            placeholder="tu.email@escuela.uba.ar"
+            value={email}
+            onChangeText={(t) => { setError(''); setEmail(t); }}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            icon={<Mail size={16} color="#16a34a" />}
+          />
+
+          <MensajeError message={error} />
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleSiguiente}
+            className="h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+          >
+            <Text className="font-semibold text-base text-white">Siguiente</Text>
+          </TouchableOpacity>
+
+          <View className="flex-row items-center gap-3 my-2">
+            <View className="flex-1 h-px bg-gray-200" />
+            <Text className="text-xs text-gray-400 font-medium">o iniciar sesión con</Text>
+            <View className="flex-1 h-px bg-gray-200" />
+          </View>
+
+          <BotonGoogle label="Iniciar sesión con Google" onPress={handleGoogleLogin} />
+        </View>
+
+        <View className="flex-row items-center justify-center gap-1 mt-6">
+          <Text className="text-sm text-gray-500">¿No tenés cuenta?</Text>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => navigate('register-email')}>
+            <Text className="text-sm font-bold text-green-600">Registrate</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+// 5. INICIO SESIÓN - PASO 2A: CÓDIGO DE VERIFICACIÓN (OTP)
+export function PantallaLoginCode() {
+  const { navigate, flowData, setPantallaActual, setUserDocId } = useApp()
+  const [codigoIngresado, setCodigoIngresado] = useState('')
+  const [codigoGenerado, setCodigoGenerado] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [enviandoEmail, setEnviandoEmail] = useState(false)
+
+  // Función para generar un código único de 6 dígitos
+  const generarNuevoCodigo = () => {
+    const nuevoCodigo = Math.floor(100000 + Math.random() * 900000).toString()
+    setCodigoGenerado(nuevoCodigo)
+    return nuevoCodigo
+  }
+
+  // Se ejecuta al cargar la pantalla para enviar el código
+  useEffect(() => {
+    if (flowData?.email) {
+      const codigo = generarNuevoCodigo()
+      enviarCorreoConCodigo(flowData.email, codigo)
+    }
+  }, [flowData?.email])
+
+  const enviarCorreoConCodigo = async (emailDestino, codigo) => {
+    setEnviandoEmail(true)
+    try {
+      await emailjs.send(
+        'service_zbwfi2e',  // Reemplazá por el Service ID del Paso 1 anterior
+        'template_nsfs7b1',  // Reemplazá por el Template ID de esta plantilla
+        { 
+          to_email: emailDestino, 
+          code: codigo 
+        },
+        { 
+          publicKey: 'qPBhMhwXdDurztFHm' // Reemplazá por la Public Key de Cuenta
+        }
+      )
+      
+      console.log('¡Correo enviado con éxito!')
+    } catch (err) {
+      console.error('Error enviando mail con EmailJS:', err)
+    } finally {
+      setEnviandoEmail(false)
+    }
+  }
+  const handleVerificarCodigo = async () => {
+    setError('')
+
+    // 1. VALIDACIÓN ESTRICTA DEL CÓDIGO
+    if (!codigoIngresado || codigoIngresado.trim() !== codigoGenerado) {
+      return setError('El código ingresado es incorrecto. Verificá e intentá de nuevo.')
+    }
+
+    setLoading(true)
+    try {
+      // 2. VERIFICACIÓN EN FIRESTORE
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+      const q = query(ColeccionUsuarios, where('Email', '==', flowData.email))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setError('No existe una cuenta asociada a este correo.')
+      } else {
+        querySnapshot.forEach((docSnap) => {
+          setUserDocId(docSnap.id)
+        })
+        setPantallaActual('home')
+      }
+    } catch (err) {
+      setError('Error al iniciar sesión: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <View className="flex-1 bg-white">
+      <ScreenHeader title="Código de verificación" onBack={() => navigate('login-email')} />
+      <View className="flex-1 justify-between px-6 pb-8 pt-6">
+        <View className="gap-5">
+          <Text className="text-sm text-gray-500 leading-relaxed">
+            Enviamos un código de confirmación de 6 dígitos a{' '}
+            <Text className="font-semibold text-gray-800">{flowData?.email}</Text>
+          </Text>
+
+          <CampoInput
+            label="Código de seguridad"
+            placeholder="Ej: 849201"
+            keyboardType="number-pad"
+            maxLength={6}
+            value={codigoIngresado}
+            onChangeText={(t) => { setError(''); setCodigoIngresado(t); }}
+            icon={<KeyRound size={16} color="#16a34a" />}
+          />
+
+          <MensajeError message={error} />
+
+          {loading || enviandoEmail ? (
+            <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 10 }} />
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleVerificarCodigo}
+              className="h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+            >
+              <Text className="font-semibold text-base text-white">Verificar e ingresar</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              const nuevo = generarNuevoCodigo()
+              enviarCorreoConCodigo(flowData.email, nuevo)
+            }}
+            className="items-center py-2"
+          >
+            <Text className="text-xs font-semibold text-gray-500">
+              ¿No recibiste el código? <Text className="text-green-600">Reenviar</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigate('login-password')}
+            className="mt-2 items-center py-2"
+          >
+            <Text className="text-sm font-semibold text-green-600">
+              o ingresar contraseña
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+// 6. INICIO SESIÓN - PASO 2B: INGRESO DE CONTRASEÑA TRADICIONAL
+export function PantallaLoginPassword() {
+  const { navigate, flowData, setPantallaActual, setUserDocId } = useApp()
+  const [contra, setContra] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleLoginConContra = async () => {
+    setError('')
+    if (!contra) {
+      return setError('Ingresá tu contraseña.')
+    }
+
+    setLoading(true)
+    try {
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+      const q = query(ColeccionUsuarios, where('Email', '==', flowData.email))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setError('El correo ingresado no está registrado.')
+      } else {
+        let encontrado = null
+        querySnapshot.forEach((docSnap) => {
+          if (docSnap.data().Contraseña === contra) {
+            encontrado = docSnap.id
+          }
+        })
+
+        if (encontrado) {
+          setUserDocId(encontrado)
+          setPantallaActual('home')
+        } else {
+          setError('Contraseña incorrecta.')
+        }
+      }
+    } catch (err) {
+      setError('Error al ingresar: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <View className="flex-1 bg-white">
+      <ScreenHeader title="Ingresar Contraseña" onBack={() => navigate('login-code')} />
+      <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
+        <View className="gap-4">
+          <Text className="text-xs text-green-700 font-semibold bg-green-50 p-3 rounded-xl border border-green-200">
+            Iniciando sesión con: {flowData?.email}
+          </Text>
+
+          <CampoInput
+            label="Contraseña"
+            secureTextEntry
+            placeholder="••••••••"
+            value={contra}
+            onChangeText={(t) => { setError(''); setContra(t); }}
+            icon={<Lock size={16} color="#16a34a" />}
+          />
+
+          <MensajeError message={error} />
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => alert('Próximamente opción de recuperar contraseña')}
+            className="self-end"
+          >
+            <Text className="text-xs font-semibold text-green-600">
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 10 }} />
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleLoginConContra}
+            className="mt-8 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+          >
+            <Text className="font-semibold text-base text-white">Ingresar</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    </View>
+  )
+}
+
+// PANTALLAS PRINCIPALES DEL CLIENTE
 export function PantallaHome() {
   const { userData, cerrarSesion, navigate } = useApp()
   const NombreUsuario = userData?.Nombre || 'Usuario'
-  const PuntosActuales = userData?.Puntos || 0
-  const RangoActual = getRangosParaPuntos(PuntosActuales)
+  const PuntosActuales = Number(userData?.Puntos) || 0
+  const RangoCalculado = getRangosParaPuntos(PuntosActuales)
   const ProximoRango = getProximoRango(PuntosActuales)
-  const IconoRango = RangoActual.icon
+  const IconoRango = RangoCalculado.icon
+
+  useEffect(() => {
+    if (userData?.id && userData?.Rango !== RangoCalculado.name) {
+      const usuarioRef = doc(db, 'USUARIOS', userData.id)
+      updateDoc(usuarioRef, {
+        Rango: RangoCalculado.name,
+      }).catch((err) => console.error('Error al actualizar rango en Firestore:', err))
+    }
+  }, [PuntosActuales, userData?.id, userData?.Rango, RangoCalculado.name])
 
   const Progreso = ProximoRango
     ? Math.min(
         100,
-        Math.round(((PuntosActuales - RangoActual.min) / (ProximoRango.min - RangoActual.min)) * 100),
+        Math.round(((PuntosActuales - RangoCalculado.min) / (ProximoRango.min - RangoCalculado.min)) * 100),
       )
     : 100
   const faltan = ProximoRango ? ProximoRango.min - PuntosActuales : 0
@@ -202,13 +724,13 @@ export function PantallaHome() {
             </Text>
           </View>
           <View className="rounded-2xl bg-green-100 p-2 border border-green-200">
-            <TacherV2Logo size={36} />
+            <TeacherV2Logo size={36} />
           </View>
         </View>
 
         <View className="relative overflow-hidden rounded-3xl bg-green-600 p-6 shadow-md">
           <View className="absolute -right-6 -top-6">
-            <Recycle size={176} color="rgba(255,255,255,0.15)" />
+            <Recycle size={176} color="#FFFFFF" opacity={0.15} />
           </View>
 
           <View className="relative z-10 justify-between">
@@ -223,7 +745,7 @@ export function PantallaHome() {
               <View className="mt-4 flex-row items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 self-start">
                 <IconoRango size={14} color="#FFF" />
                 <Text className="text-xs font-medium text-white">
-                  Rango {userData?.Rango || RangoActual.name}
+                  Rango {userData?.Rango || RangoCalculado.name}
                 </Text>
               </View>
             </View>
@@ -306,256 +828,12 @@ export function PantallaHome() {
   )
 }
 
-export function PantallaRegister() {
-  const { navigate, setPantallaActual } = useApp()
-  const [RegistroEmail, setRegistroEmail] = useState('')
-  const [RegistroNombreUsuario, setRegistroNombreUsuario] = useState('')
-  const [RegistroContraseña, setRegistroContraseña] = useState('')
-  const [RegistroConfirmarContra, setRegistroConfirmacionContra] = useState('')
-  const [ErrorRegistro, setErrorRegistro] = useState('')
-  const [Loading, setLoading] = useState(false)
-
-  const EjecutarRegistro = async () => {
-    setErrorRegistro('')
-
-    if (!RegistroEmail || !RegistroNombreUsuario || !RegistroContraseña || !RegistroConfirmarContra) {
-      return setErrorRegistro('Todos los campos son obligatorios.')
-    }
-
-    if (RegistroContraseña !== RegistroConfirmarContra) {
-      return setErrorRegistro('Las contraseñas no coinciden.')
-    }
-
-    setLoading(true)
-    try {
-      const ColeccionUsuarios = collection(db, 'USUARIOS')
-
-      const qNombreUsuario = query(ColeccionUsuarios, where('Nombre', '==', RegistroNombreUsuario.trim()))
-      const snapUser = await getDocs(qNombreUsuario)
-      if (!snapUser.empty) {
-        setLoading(false)
-        return setErrorRegistro('Este nombre de usuario ya existe.')
-      }
-
-      const qEmail = query(ColeccionUsuarios, where('Email', '==', RegistroEmail.trim()))
-      const snapEmail = await getDocs(qEmail)
-      if (!snapEmail.empty) {
-        setLoading(false)
-        return setErrorRegistro('Este email ya se encuentra registrado.')
-      }
-
-      await addDoc(ColeccionUsuarios, {
-        Nombre: RegistroNombreUsuario.trim(),
-        Email: RegistroEmail.trim(),
-        Contraseña: RegistroContraseña,
-        Fecha: new Date().toISOString(),
-        Puntos: 0,
-        Rango: 'Brote',
-        DNI: 'N/A',
-      })
-
-      setRegistroEmail('')
-      setRegistroNombreUsuario('')
-      setRegistroContraseña('')
-      setRegistroConfirmacionContra('')
-      setPantallaActual('confirm-scan')
-      
-    } catch (err) {
-      setErrorRegistro('Error al registrar: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <View className="flex-1 bg-white">
-      <ScreenHeader title="Crear cuenta" onBack={() => navigate('login')} />
-      <ScrollView contentContainerClassName="flex-grow px-6 pb-8 pt-4 justify-between">
-        <View className="gap-4">
-          <Text className="text-sm text-gray-500 leading-relaxed">
-            Creá tu cuenta de TeacherV2 para empezar a sumar puntos por cada reciclaje.
-          </Text>
-
-          <CampoInput
-            label="Correo electronico"
-            keyboardType="email-address"
-            placeholder="nombre@escuela.uba.ar"
-            value={RegistroEmail}
-            onChangeText={(t) => { setErrorRegistro(''); setRegistroEmail(t); }}
-            autoCapitalize="none"
-            icon={<Mail size={16} color="#16a34a" />}
-          />
-          <CampoInput
-            label="Nombre de usuario"
-            placeholder="tu.usuario"
-            value={RegistroNombreUsuario}
-            onChangeText={(t) => { setErrorRegistro(''); setRegistroNombreUsuario(t); }}
-            autoCapitalize="none"
-            icon={<AtSign size={16} color="#16a34a" />}
-          />
-          <CampoInput
-            label="Contraseña"
-            secureTextEntry
-            placeholder="Mínimo 8 caracteres"
-            value={RegistroContraseña}
-            onChangeText={(t) => { setErrorRegistro(''); setRegistroContraseña(t); }}
-            icon={<Lock size={16} color="#16a34a" />}
-          />
-          <CampoInput
-            label="Verificar contraseña"
-            secureTextEntry
-            placeholder="Repetí tu contraseña"
-            value={RegistroConfirmarContra}
-            onChangeText={(t) => { setErrorRegistro(''); setRegistroConfirmacionContra(t); }}
-            icon={<Lock size={16} color="#16a34a" />}
-          />
-
-          <MensajeError message={ErrorRegistro} />
-        </View>
-
-        {Loading ? (
-          <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 16 }} />
-        ) : (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={EjecutarRegistro}
-            className="mt-8 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
-          >
-            <Text className="font-semibold text-base text-white">
-              Siguiente
-            </Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </View>
-  )
-}
-
-export function PantallaLogin() {
-  const { navigate, setPantallaActual, setUserDocId } = useApp()
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginContraseña, setLoginPassword] = useState('')
-  const [errorLogin, setErrorLogin] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const ejecutarLogin = async () => {
-    setErrorLogin('')
-
-    if (!loginEmail || !loginContraseña) {
-      return setErrorLogin('Completá el email y la contraseña')
-    }
-
-    setLoading(true)
-    try {
-      const ColeccionUsuarios = collection(db, 'USUARIOS')
-      const q = query(ColeccionUsuarios, where('Email', '==', loginEmail.trim()))
-      const querySnapshot = await getDocs(q)
-
-      if (querySnapshot.empty) {
-        setErrorLogin('El email ingresado no existe en la base de datos.')
-      } 
-      else {
-        let usuarioEncontrado = null
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data()
-          if (data.Contraseña === loginContraseña) {
-            usuarioEncontrado = docSnap.id
-          }
-        });
-
-        if (usuarioEncontrado) {
-          const { setUserDocId, setPantallaActual } = useApp // obtenemos el setter
-          setUserDocId(usuarioEncontrado)
-          setPantallaActual('home')
-        } else {
-          setErrorLogin('Contraseña incorrecta')
-        }
-      }
-    } catch (err) {
-      setErrorLogin('Error de conexión: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-12 bg-white">
-      <View className="items-center gap-6">
-        <View className="rounded-3xl bg-green-50 p-4 border border-green-200">
-          <TacherV2Logo size={56} withWordmark />
-        </View>
-        <View className="items-center gap-1.5">
-          <Text className="text-2xl font-bold tracking-tight text-gray-900 text-center">
-            Reciclar Con Un Proposito
-          </Text>
-          <Text className="text-sm text-gray-500 leading-relaxed text-center">
-            Ingresá a tu cuenta para ver tus puntos y canjearlos por productos reales del kiosco.
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-8 gap-4">
-        <CampoInput
-          label="Cuenta (Email)"
-          placeholder="tu.email@escuela.uba.ar"
-          value={loginEmail}
-          onChangeText={(t) => { setErrorLogin(''); setLoginEmail(t); }}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          icon={<Mail size={16} color="#16a34a" />}
-        />
-        <CampoInput
-          label="Contraseña"
-          secureTextEntry
-          placeholder="••••••••"
-          value={loginContraseña}
-          onChangeText={(t) => { setErrorLogin(''); setLoginPassword(t); }}
-          icon={<Lock size={16} color="#16a34a" />}
-        />
-
-        <MensajeError message={errorLogin} />
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigate('Placeholder: Recuperación de contraseña')}
-          className="self-end"
-        >
-          <Text className="text-xs font-semibold text-green-600">
-            ¿Olvidaste tu contraseña?
-          </Text>
-        </TouchableOpacity>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 10 }} />
-        ) : (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={ejecutarLogin}
-            className="mt-2 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
-          >
-            <Text className="font-semibold text-base text-white">
-              Ingresar
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View className="mt-8 flex-row items-center justify-center gap-1">
-        <Text className="text-sm text-gray-500">¿No tenés cuenta?</Text>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => navigate('register')}>
-          <Text className="text-sm font-bold text-green-600">Registrate</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  )
-}
-
 export function PantallaConfirmacionEscanearDNI() {
   const { navigate } = useApp()
 
   return (
     <View className="flex-1 bg-white">
-      <ScreenHeader title="Verificá tu identidad" onBack={() => navigate('login')} />
+      <ScreenHeader title="Verificá tu identidad" onBack={() => navigate('welcome')} />
       <ScrollView contentContainerClassName="flex-grow px-6 pb-8 pt-6 justify-between">
         <View>
           <View className="self-center size-20 items-center justify-center rounded-3xl bg-green-100 border border-green-200 shadow-xs">
@@ -598,7 +876,7 @@ export function PantallaConfirmacionEscanearDNI() {
 
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => navigate('Placeholder: Escáner de Cámara')}
+          onPress={() => navigate('home')}
           className="mt-8 h-12 w-full flex-row items-center justify-center gap-2 rounded-2xl bg-green-600 shadow-xs"
         >
           <ScanLine size={20} color="#FFF" />
@@ -610,8 +888,6 @@ export function PantallaConfirmacionEscanearDNI() {
     </View>
   )
 }
-
-// PANTALLA EN DESARROLLO
 
 export function PantallaEnDesarrollo({ seccion }) {
   const { navigate } = useApp()
@@ -640,37 +916,35 @@ export function PantallaEnDesarrollo({ seccion }) {
   )
 }
 
-
-// PANTALLA PRINCIPAL 
-
+// PANTALLA PRINCIPAL
 export default function PantallaActual() {
-  const [pantallaActual, setPantallaActual] = useState('login')
+  const [pantallaActual, setPantallaActual] = useState('welcome')
   const [userData, setUserData] = useState(null)
+  const [flowData, setFlowData] = useState({})
   const [SeccionTemporal, setSeccionTemporal] = useState('')
-  const [userDocId, setUserDocId] = useState(null) // Guardamos el ID del documento
+  const [userDocId, setUserDocId] = useState(null)
 
   // ESCUCHADOR EN TIEMPO REAL DE FIRESTORE
   useEffect(() => {
-    // Si no hay un usuario logueado, no escuchamos nada
     if (!userDocId) {
       setUserData(null)
       return
     }
 
-    // Creamos la referencia directa al documento del usuario
     const userRef = doc(db, 'USUARIOS', userDocId)
 
-    // onSnapshot escucha cualquier cambio en vivo
-    const unsubscribe = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        // Actualiza el estado de la app automáticamente cuando cambia algo en la BD
-        setUserData({ id: docSnap.id, ...docSnap.data() })
+    const unsubscribe = onSnapshot(
+      userRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserData({ id: docSnap.id, ...docSnap.data() })
+        }
+      },
+      (error) => {
+        console.error('Error escuchando cambios en tiempo real:', error)
       }
-    }, (error) => {
-      console.error("Error escuchando cambios en tiempo real:", error)
-    })
+    )
 
-    // Limpiamos la suscripción cuando se cierra sesión o cambia el usuario
     return () => unsubscribe()
   }, [userDocId])
 
@@ -686,7 +960,8 @@ export default function PantallaActual() {
   const cerrarSesion = () => {
     setUserDocId(null)
     setUserData(null)
-    setPantallaActual('login')
+    setFlowData({})
+    setPantallaActual('welcome')
   }
 
   return (
@@ -695,6 +970,8 @@ export default function PantallaActual() {
         userData,
         setUserData,
         setUserDocId,
+        flowData,
+        setFlowData,
         cerrarSesion,
         navigate,
         setPantallaActual,
@@ -703,8 +980,12 @@ export default function PantallaActual() {
       <SafeAreaProvider>
         <SafeAreaView className="flex-1 bg-white">
           <StatusBar barStyle="dark-content" />
-          {pantallaActual === 'login' && <PantallaLogin />}
-          {pantallaActual === 'register' && <PantallaRegister />}
+          {pantallaActual === 'welcome' && <PantallaWelcome />}
+          {pantallaActual === 'register-email' && <PantallaRegisterEmail />}
+          {pantallaActual === 'register-password' && <PantallaRegisterPassword />}
+          {pantallaActual === 'login-email' && <PantallaLoginEmail />}
+          {pantallaActual === 'login-code' && <PantallaLoginCode />}
+          {pantallaActual === 'login-password' && <PantallaLoginPassword />}
           {pantallaActual === 'home' && <PantallaHome />}
           {pantallaActual === 'confirm-scan' && <PantallaConfirmacionEscanearDNI />}
           {pantallaActual === 'placeholder' && <PantallaEnDesarrollo seccion={SeccionTemporal} />}

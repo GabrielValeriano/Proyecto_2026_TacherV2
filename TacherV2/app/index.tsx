@@ -7,6 +7,8 @@ import {
   ScrollView,
   StatusBar,
   ActivityIndicator,
+  Alert,
+  StyleSheet
 } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import {
@@ -38,8 +40,113 @@ import {
   doc,
   updateDoc
 } from 'firebase/firestore'
-import { db } from 'src/firebase'
+import { db, auth } from 'src/firebase'
 import emailjs from '@emailjs/react-native'
+
+import * as WebBrowser from 'expo-web-browser'
+import * as Google from 'expo-auth-session/providers/google'
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
+import { makeRedirectUri } from 'expo-auth-session'
+import * as AuthSession from 'expo-auth-session'
+import { GoogleSignin } from '@react-native-google-signin/google-signin'
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera'
+import { X } from 'lucide-react-native'
+
+
+WebBrowser.maybeCompleteAuthSession()
+
+// Configuración inicial del cliente nativo de Google
+GoogleSignin.configure({
+  webClientId: '19002843378-jkcv53u77nfqvpm21ulf1p4irqajpdp3.apps.googleusercontent.com', // Web Client ID de tu Google Cloud
+  offlineAccess: false,
+  prompt: 'select_account', // <-- Fuerza siempre la pantalla de selección de cuenta
+})
+
+export function useGoogleAuthFlow() {
+  const { setPantallaActual, setUserDocId, navigate, setFlowData, flowData } = useApp()
+  const [loadingGoogle, setLoadingGoogle] = useState(false)
+
+  const manejarAutenticacionGoogle = async (
+    isRegisterFlow = false, 
+    onError?: (msg: string) => void
+  ) => {
+    setLoadingGoogle(true)
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
+
+      // Limpiamos la sesión previa del SDK para forzar la selección de cuenta
+      await GoogleSignin.signOut().catch(() => {})
+
+      const signInResult = await GoogleSignin.signIn()
+      const idToken = signInResult.data?.idToken || signInResult.idToken
+
+      if (!idToken) {
+        if (onError) onError('No se pudo obtener el token de autenticación.')
+        return
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken)
+      const userCredential = await signInWithCredential(auth, credential)
+      const user = userCredential.user
+
+      const userEmail = user.email || ''
+      const userName = user.displayName || userEmail.split('@')[0] || ''
+
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+      const q = query(ColeccionUsuarios, where('Email', '==', userEmail))
+      const querySnapshot = await getDocs(q)
+
+      if (isRegisterFlow) {
+        // --- REGISTRO CON GOOGLE ---
+        if (!querySnapshot.empty) {
+          await auth.signOut()
+
+          if (onError) {
+            onError('Esta cuenta de Google ya está registrada. Por favor, iniciá sesión.')
+          } else {
+            Alert.alert('Cuenta existente', 'Esta cuenta de Google ya está registrada. Por favor, iniciá sesión.')
+          }
+          return
+        }
+
+        // En lugar de hacer addDoc acá, guardamos en flowData y mandamos a escaneo de DNI
+        setFlowData({
+          ...flowData,
+          email: userEmail,
+          contra: '', // Autenticado vía Google
+          nombre: userName, // Sugerimos el nombre de Google
+          proveedor: 'google.com',
+        })
+
+        navigate('confirm-scan')
+
+      } else {
+        // --- INICIO DE SESIÓN ---
+        if (querySnapshot.empty) {
+          await auth.signOut()
+
+          if (onError) {
+            onError('Esta cuenta de Google no está registrada. Por favor, registrate primero.')
+          } else {
+            Alert.alert('Cuenta no encontrada', 'Esta cuenta no está registrada.')
+          }
+        } else {
+          querySnapshot.forEach((docSnap) => setUserDocId(docSnap.id))
+          setPantallaActual('home')
+        }
+      }
+    } catch (error: any) {
+      console.error('Error en autenticación nativa de Google:', error)
+      if (onError && error.code !== 'ASYNC_OP_IN_PROGRESS') {
+        onError('No se pudo completar el inicio de sesión con Google.')
+      }
+    } finally {
+      setLoadingGoogle(false)
+    }
+  }
+
+  return { promptGoogle: manejarAutenticacionGoogle, loadingGoogle, disabled: false }
+}
 
 // ASIGNACION DE RANGOS
 const ListaDeRangos = [
@@ -129,7 +236,7 @@ function MensajeError({ message }) {
   return (
     <View className="my-2 rounded-2xl border border-red-300 bg-red-50 p-3">
       <Text className="text-center text-xs font-medium text-red-600">
-        ⚠️ {message}
+        {message}
       </Text>
     </View>
   )
@@ -226,33 +333,75 @@ export function PantallaWelcome() {
   )
 }
 
-// 2. REGISTRO - PASO 1: INGRESAR EMAIL O GOOGLE
 export function PantallaRegisterEmail() {
-  const { navigate, setFlowData, flowData } = useApp()
+const { navigate, setFlowData, flowData } = useApp()
   const [email, setEmail] = useState(flowData?.email || '')
+  const [contra, setContra] = useState(flowData?.contra || '')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { promptGoogle, loadingGoogle } = useGoogleAuthFlow()
 
-  const handleSiguiente = () => {
+  const handleSiguiente = async () => {
     setError('')
-    if (!email.trim()) {
-      return setError('Por favor ingresá tu correo electrónico.')
+    const correoLimpio = email.trim()
+
+    if (!correoLimpio || !contra) {
+      return setError('Por favor completá todos los campos.')
     }
-    setFlowData({ ...flowData, email: email.trim() })
-    navigate('register-password')
+
+    // 1. Validar formato de Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(correoLimpio)) {
+      return setError('Ingresá un correo electrónico válido (ejemplo@gmail.com).')
+    }
+
+    // 2. Validar longitud de la contraseña
+    if (contra.length < 8) {
+      return setError('La contraseña debe tener al menos 8 caracteres.')
+    }
+
+    // 3. Consultar a Firestore si el correo ya está registrado
+    setLoading(true)
+    try {
+      const ColeccionUsuarios = collection(db, 'USUARIOS')
+      const qEmail = query(ColeccionUsuarios, where('Email', '==', correoLimpio))
+      const snapEmail = await getDocs(qEmail)
+
+      if (!snapEmail.empty) {
+        setLoading(false)
+        return setError('Este correo electrónico ya se encuentra registrado.')
+      }
+
+      // Si no está registrado, guardamos en flowData y avanzamos
+      setFlowData({
+        ...flowData,
+        email: correoLimpio,
+        contra,
+      })
+
+      setLoading(false)
+      navigate('confirm-scan')
+    } catch (err: any) {
+      console.error('Error al verificar email:', err)
+      setError('Error al verificar el correo: ' + (err.message || 'Error de conexión'))
+      setLoading(false)
+    }
   }
 
   const handleGoogleRegister = () => {
-    // Simulación de Auth Google
-    navigate('confirm-scan')
+    setError('')
+    promptGoogle(true, (msg) => {
+      setError(msg)
+    })
   }
 
   return (
     <View className="flex-1 bg-white">
       <ScreenHeader title="Registrarse" onBack={() => navigate('welcome')} />
       <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
-        <View className="gap-5">
-          <Text className="text-sm text-gray-500 leading-relaxed">
-            Ingresá tu correo electrónico para comenzar a crear tu cuenta.
+        <View className="gap-4">
+          <Text className="text-sm text-gray-500 leading-relaxed mb-2">
+            Ingresá tu correo y la contraseña que vas a usar para tu cuenta.
           </Text>
 
           <CampoInput
@@ -265,15 +414,28 @@ export function PantallaRegisterEmail() {
             icon={<Mail size={16} color="#16a34a" />}
           />
 
+          <CampoInput
+            label="Contraseña"
+            secureTextEntry
+            placeholder="Mínimo 8 caracteres"
+            value={contra}
+            onChangeText={(t) => { setError(''); setContra(t); }}
+            icon={<Lock size={16} color="#16a34a" />}
+          />
+
           <MensajeError message={error} />
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleSiguiente}
-            className="h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
-          >
-            <Text className="font-semibold text-base text-white">Siguiente</Text>
-          </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="large" color="#16a34a" style={{ marginVertical: 12 }} />
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSiguiente}
+              className="mt-2 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
+            >
+              <Text className="font-semibold text-base text-white">Siguiente</Text>
+            </TouchableOpacity>
+          )}
 
           <View className="flex-row items-center gap-3 my-2">
             <View className="flex-1 h-px bg-gray-200" />
@@ -281,7 +443,14 @@ export function PantallaRegisterEmail() {
             <View className="flex-1 h-px bg-gray-200" />
           </View>
 
-          <BotonGoogle label="Continuar con Google" onPress={handleGoogleRegister} />
+          {loadingGoogle ? (
+            <ActivityIndicator color="#16a34a" style={{ marginVertical: 12 }} />
+          ) : (
+            <BotonGoogle 
+              label="Registrarse con Google" 
+              onPress={handleGoogleRegister} 
+            />
+          )}
         </View>
 
         <View className="flex-row items-center justify-center gap-1 mt-6">
@@ -295,78 +464,82 @@ export function PantallaRegisterEmail() {
   )
 }
 
-// 3. REGISTRO - PASO 2: ASIGNAR CONTRASEÑA
-export function PantallaRegisterPassword() {
-  const { navigate, flowData, setUserDocId } = useApp()
-  const [contra, setContra] = useState('')
-  const [confirmContra, setConfirmContra] = useState('')
+export function PantallaRegisterUsername() {
+  const { navigate, setPantallaActual, flowData, setUserDocId } = useApp()
+  const [nombre, setNombre] = useState(flowData?.nombre || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleCompletarRegistro = async () => {
     setError('')
-    if (!contra || !confirmContra) {
-      return setError('Completá ambos campos de contraseña.')
-    }
-    if (contra !== confirmContra) {
-      return setError('Las contraseñas no coinciden.')
+    const nombreLimpio = nombre.trim()
+
+    if (!nombreLimpio) {
+      return setError('Por favor ingresá un nombre de usuario.')
     }
 
     setLoading(true)
     try {
       const ColeccionUsuarios = collection(db, 'USUARIOS')
 
+      // Verificar si el correo ya existe por seguridad
       const qEmail = query(ColeccionUsuarios, where('Email', '==', flowData.email))
       const snapEmail = await getDocs(qEmail)
       if (!snapEmail.empty) {
         setLoading(false)
-        return setError('Este email ya se encuentra registrado.')
+        Alert.alert('Error', 'Este email ya se encuentra registrado.')
+        return navigate('register-email')
       }
 
+      // Publicación unificada de todos los datos al final del flujo
       const nuevoDocRef = await addDoc(ColeccionUsuarios, {
-        Nombre: flowData.email.split('@')[0],
+        Nombre: nombreLimpio,
         Email: flowData.email,
-        Contraseña: contra,
+        Contraseña: flowData.contra || '',
+        DNI: flowData.dni || 'N/A',
+        Proveedor: flowData.proveedor || 'email',
         Fecha: new Date().toISOString(),
         Puntos: 0,
         Rango: 'Brote',
-        DNI: 'N/A',
       })
 
       setUserDocId(nuevoDocRef.id)
-      navigate('confirm-scan')
-    } catch (err) {
-      setError('Error al registrar: ' + err.message)
-    } finally {
+
+      setTimeout(() => {
+        setLoading(false)
+        if (navigate) {
+          navigate('home')
+        } else if (setPantallaActual) {
+          setPantallaActual('home')
+        }
+      }, 500)
+
+    } catch (err: any) {
+      console.error('Error al registrar en Firebase:', err)
+      setError('No se pudo completar el registro: ' + (err.message || 'Error del servidor'))
       setLoading(false)
     }
   }
 
   return (
     <View className="flex-1 bg-white">
-      <ScreenHeader title="Crear contraseña" onBack={() => navigate('register-email')} />
+      <ScreenHeader title="Nombre de usuario" onBack={() => navigate('confirm-scan')} />
       <ScrollView contentContainerClassName="flex-grow justify-between px-6 pb-8 pt-6">
         <View className="gap-4">
           <Text className="text-xs text-green-700 font-semibold bg-green-50 p-3 rounded-xl border border-green-200">
             Registrando cuenta para: {flowData?.email}
           </Text>
 
-          <CampoInput
-            label="Asignar contraseña"
-            secureTextEntry
-            placeholder="Mínimo 8 caracteres"
-            value={contra}
-            onChangeText={(t) => { setError(''); setContra(t); }}
-            icon={<Lock size={16} color="#16a34a" />}
-          />
+          <Text className="text-sm text-gray-500 leading-relaxed">
+            Elegí cómo querés que te llamemos dentro de la aplicación.
+          </Text>
 
           <CampoInput
-            label="Confirmar contraseña"
-            secureTextEntry
-            placeholder="Repetí tu contraseña"
-            value={confirmContra}
-            onChangeText={(t) => { setError(''); setConfirmContra(t); }}
-            icon={<Lock size={16} color="#16a34a" />}
+            label="Nombre de usuario"
+            placeholder="Ingresá tu nombre o apodo"
+            value={nombre}
+            onChangeText={(t) => { setError(''); setNombre(t); }}
+            icon={<User size={16} color="#16a34a" />}
           />
 
           <MensajeError message={error} />
@@ -380,7 +553,7 @@ export function PantallaRegisterPassword() {
             onPress={handleCompletarRegistro}
             className="mt-8 h-12 w-full items-center justify-center rounded-2xl bg-green-600 shadow-xs"
           >
-            <Text className="font-semibold text-base text-white">Siguiente</Text>
+            <Text className="font-semibold text-base text-white">Finalizar registro</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -393,6 +566,7 @@ export function PantallaLoginEmail() {
   const { navigate, setFlowData, flowData } = useApp()
   const [email, setEmail] = useState(flowData?.email || '')
   const [error, setError] = useState('')
+  const { promptGoogle, loadingGoogle } = useGoogleAuthFlow()
 
   const handleSiguiente = () => {
     setError('')
@@ -401,11 +575,6 @@ export function PantallaLoginEmail() {
     }
     setFlowData({ ...flowData, email: email.trim() })
     navigate('login-code')
-  }
-
-  const handleGoogleLogin = () => {
-    // Simulación Login con Google
-    navigate('home')
   }
 
   return (
@@ -443,7 +612,17 @@ export function PantallaLoginEmail() {
             <View className="flex-1 h-px bg-gray-200" />
           </View>
 
-          <BotonGoogle label="Iniciar sesión con Google" onPress={handleGoogleLogin} />
+          {loadingGoogle ? (
+            <ActivityIndicator color="#16a34a" style={{ marginVertical: 12 }} />
+          ) : (
+            <BotonGoogle 
+              label="Iniciar sesión con Google" 
+              onPress={() => {
+                setError('') // Limpiamos errores anteriores
+                promptGoogle(false, (msg) => setError(msg)) // Pasamos el Callback de Error
+              }} 
+            />
+          )}
         </View>
 
         <View className="flex-row items-center justify-center gap-1 mt-6">
@@ -481,28 +660,41 @@ export function PantallaLoginCode() {
     }
   }, [flowData?.email])
 
-  const enviarCorreoConCodigo = async (emailDestino, codigo) => {
+  const enviarCorreoConCodigo = async (emailDestino: string, codigo: string) => {
     setEnviandoEmail(true)
     try {
-      await emailjs.send(
-        'service_zbwfi2e',  // Reemplazá por el Service ID del Paso 1 anterior
-        'template_nsfs7b1',  // Reemplazá por el Template ID de esta plantilla
-        { 
-          to_email: emailDestino, 
-          code: codigo 
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': 'http://localhost', // Bypass del chequeo de entorno de EmailJS
         },
-        { 
-          publicKey: 'qPBhMhwXdDurztFHm' // Reemplazá por la Public Key de Cuenta
-        }
-      )
-      
-      console.log('¡Correo enviado con éxito!')
+        body: JSON.stringify({
+          service_id: 'service_zbwfi2e',
+          template_id: 'template_nsfs7b1',
+          user_id: 'qPBhMhwXdDurztFHm', // Tu Public Key
+          template_params: {
+            to_email: emailDestino,
+            code: codigo,
+          },
+        }),
+      })
+
+      if (response.ok) {
+        console.log('¡Correo enviado con éxito!')
+      } else {
+        const errorText = await response.text()
+        console.error('Error enviando mail con EmailJS:', response.status, errorText)
+        setError('No se pudo enviar el correo de verificación.')
+      }
     } catch (err) {
-      console.error('Error enviando mail con EmailJS:', err)
+      console.error('Error de red enviando mail:', err)
+      setError('Error de conexión al enviar el correo.')
     } finally {
       setEnviandoEmail(false)
     }
   }
+  
   const handleVerificarCodigo = async () => {
     setError('')
 
@@ -760,7 +952,7 @@ export function PantallaHome() {
               <Text className="text-xs text-green-100">
                 {ProximoRango
                   ? `Te faltan ${faltan.toLocaleString('es-AR')} puntos para llegar a ${ProximoRango.name}`
-                  : '¡Alcanzaste el rango máximo! 🌳'}
+                  : '¡Alcanzaste el rango máximo! '}
               </Text>
             </View>
 
@@ -829,11 +1021,76 @@ export function PantallaHome() {
 }
 
 export function PantallaConfirmacionEscanearDNI() {
-  const { navigate } = useApp()
+  const { navigate, setFlowData, flowData } = useApp()
+  const [permission, requestPermission] = useCameraPermissions()
+  const [isScanning, setIsScanning] = useState(false)
+  const [scanned, setScanned] = useState(false)
+
+  // Guardar el DNI en flowData y pasar a la pantalla para crear el Nombre de usuario
+  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
+    if (scanned) return
+    setScanned(true)
+
+    const rawBarcodeData = result.data
+
+    setFlowData({
+      ...flowData,
+      dni: rawBarcodeData,
+    })
+
+    setTimeout(() => {
+      setIsScanning(false)
+      navigate('register-username') // Navegamos a la pantalla de nombre de usuario
+    }, 400)
+  }
+
+  const handleIniciarEscaneo = async () => {
+    if (!permission?.granted) {
+      const response = await requestPermission()
+      if (!response.granted) {
+        Alert.alert(
+          'Permiso requerido',
+          'Necesitamos acceso a la cámara para poder escanear el código de barras de tu DNI.'
+        )
+        return
+      }
+    }
+    setScanned(false)
+    setIsScanning(true)
+  }
+
+  if (isScanning) {
+    return (
+      <View className="flex-1 bg-black justify-center items-center">
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          barcodeScannerSettings={{
+            barcodeTypes: ['pdf417', 'code128', 'qr'],
+          }}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        />
+
+        <View className="w-80 h-48 border-2 border-green-500 rounded-2xl bg-black/30 justify-center items-center p-4">
+          <Text className="text-white font-medium bg-black/60 px-3 py-1.5 rounded-full text-xs text-center">
+            Alineá el código de barras de tu DNI acá
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsScanning(false)}
+          className="absolute bottom-12 size-14 rounded-full bg-red-600/90 items-center justify-center shadow-lg"
+        >
+          <X size={24} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   return (
     <View className="flex-1 bg-white">
-      <ScreenHeader title="Verificá tu identidad" onBack={() => navigate('welcome')} />
+      <ScreenHeader title="Verificá tu identidad" onBack={() => navigate('register-email')} />
       <ScrollView contentContainerClassName="flex-grow px-6 pb-8 pt-6 justify-between">
         <View>
           <View className="self-center size-20 items-center justify-center rounded-3xl bg-green-100 border border-green-200 shadow-xs">
@@ -876,7 +1133,7 @@ export function PantallaConfirmacionEscanearDNI() {
 
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => navigate('home')}
+          onPress={handleIniciarEscaneo}
           className="mt-8 h-12 w-full flex-row items-center justify-center gap-2 rounded-2xl bg-green-600 shadow-xs"
         >
           <ScanLine size={20} color="#FFF" />
@@ -888,6 +1145,7 @@ export function PantallaConfirmacionEscanearDNI() {
     </View>
   )
 }
+
 
 export function PantallaEnDesarrollo({ seccion }) {
   const { navigate } = useApp()
@@ -982,7 +1240,7 @@ export default function PantallaActual() {
           <StatusBar barStyle="dark-content" />
           {pantallaActual === 'welcome' && <PantallaWelcome />}
           {pantallaActual === 'register-email' && <PantallaRegisterEmail />}
-          {pantallaActual === 'register-password' && <PantallaRegisterPassword />}
+          {pantallaActual === 'register-username' && <PantallaRegisterUsername />}
           {pantallaActual === 'login-email' && <PantallaLoginEmail />}
           {pantallaActual === 'login-code' && <PantallaLoginCode />}
           {pantallaActual === 'login-password' && <PantallaLoginPassword />}

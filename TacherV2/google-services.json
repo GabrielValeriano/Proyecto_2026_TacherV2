@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "19002843378",
+    "project_id": "tacherv2-7b0ff",
+    "storage_bucket": "tacherv2-7b0ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:19002843378:android:9175858d37601f991b706b",
+        "android_client_info": {
+          "package_name": "com.tacherv2.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "19002843378-cm7c6khkf07ek25879fbosictjm668au.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tacherv2.app",
+            "certificate_hash": "a8b770a441abf2f7b21dbe7e2c9419d1d1eece0a"
+          }
+        },
+        {
+          "client_id": "19002843378-rk04fg9ce9l3mre2r0vt1cr3tk5rbnvm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tacherv2.app",
+            "certificate_hash": "17e113b36996e87ee7d18da0fc1337ab0368c711"
+          }
+        },
+        {
+          "client_id": "19002843378-ujiu1vuh1cefrv7lv80djrvuht61hddb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tacherv2.app",
+            "certificate_hash": "d919bff238f1cd1a8872c50ebb0bb281049b1c04"
+          }
+        },
+        {
+          "client_id": "19002843378-jkcv53u77nfqvpm21ulf1p4irqajpdp3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoftYYHfwKTmyS97asHKFC_y7nTfayoTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "19002843378-jkcv53u77nfqvpm21ulf1p4irqajpdp3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

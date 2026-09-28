@@ -3,12 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBOzjoEaHWNmJoOVg6Jipyw...",
+  apiKey: "AIzaSyBGZjoEaHWNmJoOVg6JipywRADQr55cw90",
   authDomain: "tacherv2-7b0ff.firebaseapp.com",
   projectId: "tacherv2-7b0ff",
   storageBucket: "tacherv2-7b0ff.firebasestorage.app",
-  messagingSenderId: "1900284337...",
-  appId: "1:190028433...:web:5e2d96dd62db79a01704b",
+  messagingSenderId: "19002843378",
+  appId: "1:19002843378:web:5e2d96d6620b79a01b706b",
   measurementId: "G-YLN8O36NRN"
 };
 

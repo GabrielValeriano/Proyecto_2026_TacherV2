@@ -23,7 +23,9 @@ export function PantallaWelcome() {
       </View>
 
       <View style={estilos.botones}>
-        <BotonPrimario label="Iniciar Sesión" onPress={() => navigate('login-email')} />
+        <BotonPrimario 
+          label="Iniciar Sesión" 
+          onPress={() => navigate('login-email')} />
         <BotonPrimario
           label="Registrarse"
           variante="contorno"

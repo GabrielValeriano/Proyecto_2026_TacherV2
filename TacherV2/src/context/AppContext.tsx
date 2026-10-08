@@ -12,7 +12,7 @@ export function useApp(): AppContextValue {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [pantallaActual, setPantallaActual] = useState<Pantalla>('register-username')
+  const [pantallaActual, setPantallaActual] = useState<Pantalla>('welcome')
   const [seccionEnDesarrollo, setSeccionEnDesarrollo] = useState('')
   const [userDocId, setUserDocId] = useState<string | null>(null)
   const [userData, setUserData] = useState<Usuario | null>(null)
@@ -41,7 +41,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cerrarSesionFirebase().catch((error) => console.error('Error al cerrar sesión:', error))
     setUserDocId(null)
     setFlowData({})
-    setPantallaActual('login-email')
+    setPantallaActual('welcome')
   }
 
   return (

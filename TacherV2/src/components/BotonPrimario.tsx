@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { COLORES, SOMBRAS } from 'src/theme'
 
-type Variante = 'solido' | 'contorno'
+type Variante = 'solido' | 'contorno' | 'peligro'
 
 interface Props {
   label: string
@@ -29,23 +29,25 @@ export function BotonPrimario({
   variante = 'solido',
   style,
 }: Props) {
-  const esSolido = variante === 'solido'
+  const { boton, texto, spinner } = {
+    solido: { boton: estilos.botonSolido, texto: estilos.textoClaro, spinner: COLORES.blanco },
+    contorno: { boton: estilos.botonContorno, texto: estilos.textoVerde, spinner: COLORES.verde600 },
+    peligro: { boton: estilos.botonPeligro, texto: estilos.textoClaro, spinner: COLORES.blanco },
+  }[variante]
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
       disabled={loading}
-      style={[estilos.boton, esSolido ? estilos.botonSolido : estilos.botonContorno, style]}
+      style={[estilos.boton, boton, style]}
     >
       {loading ? (
-        <ActivityIndicator color={esSolido ? COLORES.blanco : COLORES.verde600} />
+        <ActivityIndicator color={spinner} />
       ) : (
         <>
           {icon}
-          <Text style={[estilos.texto, esSolido ? estilos.textoSolido : estilos.textoContorno]}>
-            {label}
-          </Text>
+          <Text style={[estilos.texto, texto]}>{label}</Text>
         </>
       )}
     </TouchableOpacity>
@@ -71,15 +73,18 @@ const estilos = StyleSheet.create({
     borderColor: COLORES.verde600,
     backgroundColor: COLORES.blanco,
   },
+  botonPeligro: {
+    backgroundColor: COLORES.rojo600,
+  },
   texto: {
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '600',
   },
-  textoSolido: {
+  textoClaro: {
     color: COLORES.blanco,
   },
-  textoContorno: {
+  textoVerde: {
     color: COLORES.verde600,
   },
 })

@@ -1,7 +1,8 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { ArrowRight, Gift, Info, Leaf, Recycle } from 'lucide-react-native'
+import { ArrowRight, Gift, Info, Leaf, LogOut, Recycle } from 'lucide-react-native'
 import { BarraDeNavegacion, type PestañaId } from 'src/components/BarraDeNavegacion'
+import { BotonPrimario } from 'src/components/BotonPrimario'
 import { TeacherV2Logo } from 'src/components/TeacherV2Logo'
 import { useApp } from 'src/context/AppContext'
 import { getResumenRango, type ResumenRango } from 'src/domain/rangos'
@@ -40,7 +41,7 @@ function TarjetaPuntos({ puntos, nombreRango, resumen, onIrACanjes }: TarjetaPun
   return (
     <View style={estilos.tarjeta}>
       <View style={estilos.iconoDecorativo}>
-        <Recycle size={176} color={COLORES.blanco} opacity={0.30} />
+        <Recycle size={176} color={COLORES.blanco} opacity={0.15} />
       </View>
 
       <View style={estilos.tarjetaContenido}>
@@ -87,7 +88,7 @@ function AccesoHistorial({ onPress }: { onPress: () => void }) {
   )
 }
 
-function InfoTeacherV2({ onCerrarSesion }: { onCerrarSesion: () => void }) {
+function InfoTeacherV2({ onSaberMas }: { onSaberMas: () => void }) {
   return (
     <View style={estilos.info}>
       <View style={estilos.infoEncabezado}>
@@ -98,12 +99,8 @@ function InfoTeacherV2({ onCerrarSesion }: { onCerrarSesion: () => void }) {
         Convertimos el reciclaje en recompensas reales para que cada botella, lata o papel que
         reciclás tenga un impacto positivo en tu escuela y en el planeta.
       </Text>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onCerrarSesion}
-        style={estilos.botonCerrarSesion}
-      >
-        <Text style={estilos.textoCerrarSesion}>Cerrar Sesión</Text>
+      <TouchableOpacity activeOpacity={0.7} onPress={onSaberMas} style={estilos.botonSaberMas}>
+        <Text style={estilos.textoSaberMas}>Saber más</Text>
       </TouchableOpacity>
     </View>
   )
@@ -133,7 +130,13 @@ export function PantallaHome() {
           onIrACanjes={() => navigate('recibo-canje')}
         />
         <AccesoHistorial onPress={() => abrirEnDesarrollo('Historial de Reciclajes')} />
-        <InfoTeacherV2 onCerrarSesion={cerrarSesion} />
+        <InfoTeacherV2 onSaberMas={() => abrirEnDesarrollo('Información')} />
+        <BotonPrimario
+          label="Cerrar sesión"
+          variante="peligro"
+          icon={<LogOut size={18} color={COLORES.blanco} />}
+          onPress={cerrarSesion}
+        />
       </ScrollView>
 
       <BarraDeNavegacion activeTab="home" onTabPress={handleTabPress} />
@@ -191,7 +194,7 @@ const estilos = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: COLORES.verde600,
     padding: 24,
-    ...SOMBRAS.grande,
+    ...SOMBRAS.media,
   },
   iconoDecorativo: {
     position: 'absolute',
@@ -336,7 +339,7 @@ const estilos = StyleSheet.create({
     lineHeight: 19.5,
     color: COLORES.gris600,
   },
-  botonCerrarSesion: {
+  botonSaberMas: {
     alignSelf: 'flex-start',
     marginTop: 16,
     borderRadius: 12,
@@ -346,7 +349,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  textoCerrarSesion: {
+  textoSaberMas: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',

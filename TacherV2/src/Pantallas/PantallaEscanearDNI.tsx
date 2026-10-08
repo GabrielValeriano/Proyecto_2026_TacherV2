@@ -118,7 +118,7 @@ export function PantallaEscanearDNI() {
 }
 
 const estilos = StyleSheet.create({
-  // --- Vista de la cámara
+  // La cámara
   camaraPantalla: {
     flex: 1,
     alignItems: 'center',
@@ -160,7 +160,7 @@ const estilos = StyleSheet.create({
     ...SOMBRAS.grande,
   },
 
-  // --- Pantalla de introducción
+  // Pantalla de confirmacion
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.blanco,

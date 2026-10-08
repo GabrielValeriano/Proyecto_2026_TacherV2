@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-/** Estado de error de un formulario, con helper para limpiarlo cuando el usuario edita un campo. */
 export function useErrorDeFormulario() {
   const [error, setError] = useState('')
 

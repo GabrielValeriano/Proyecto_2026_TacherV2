@@ -4,7 +4,6 @@ export function generarCodigoVerificacion(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-/** Envía el código por mail. Lanza un Error con mensaje apto para mostrar al usuario. */
 export async function enviarCodigoVerificacion(emailDestino: string, codigo: string) {
   let response: Response
   try {

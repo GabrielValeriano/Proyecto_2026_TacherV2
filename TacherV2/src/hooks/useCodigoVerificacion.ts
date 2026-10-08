@@ -5,7 +5,7 @@ import {
 } from 'src/services/verificacionEmail'
 import { mensajeDeError } from 'src/utils/errores'
 
-/** Genera y envía un código al email dado, y permite verificar el que ingresa el usuario. */
+
 export function useCodigoVerificacion(email?: string) {
   const [codigoGenerado, setCodigoGenerado] = useState('')
   const [enviando, setEnviando] = useState(false)

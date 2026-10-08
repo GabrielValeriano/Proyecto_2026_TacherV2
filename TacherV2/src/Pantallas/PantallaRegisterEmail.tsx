@@ -91,13 +91,13 @@ export function PantallaRegisterEmail() {
             style={estilos.botonSiguiente}
           />
 
-          <SeparadorO texto="o registrarme con" />
+        {/*  <SeparadorO texto="o registrarme con" />
 
           <BotonGoogle
             label="Registrarse con Google"
             onPress={handleGoogle}
             loading={loadingGoogle}
-          />
+          />*/}
         </View>
 
         <EnlaceAlternativo

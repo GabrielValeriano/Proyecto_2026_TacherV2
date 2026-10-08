@@ -17,7 +17,6 @@ const MENSAJES_AUTH: Record<string, string> = {
   'auth/email-already-in-use': YA_REGISTRADO,
   'auth/invalid-email': 'Ingresá un correo electrónico válido (ejemplo@gmail.com).',
   'auth/weak-password': 'La contraseña es demasiado débil.',
-  // Firebase no distingue "mail inexistente" de "contraseña incorrecta" (a propósito)
   'auth/invalid-credential': 'Correo o contraseña incorrectos. Intentalo de nuevo.',
   'auth/user-not-found': 'Correo o contraseña incorrectos. Intentalo de nuevo.',
   'auth/wrong-password': 'Correo o contraseña incorrectos. Intentalo de nuevo.',

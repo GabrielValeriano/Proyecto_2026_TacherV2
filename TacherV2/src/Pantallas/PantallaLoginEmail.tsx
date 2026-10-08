@@ -89,13 +89,13 @@ export function PantallaLoginEmail() {
 
           <BotonPrimario label="Iniciar Sesión" onPress={handleIniciarSesion} loading={loading} />
 
-          <SeparadorO texto="o iniciar sesión con" />
+         {/* <SeparadorO texto="o iniciar sesión con" />
 
           <BotonGoogle
             label="Iniciar sesión con Google"
             onPress={handleGoogle}
             loading={loadingGoogle}
-          />
+          />*/}
         </View>
 
         <EnlaceAlternativo

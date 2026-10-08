@@ -37,7 +37,6 @@ export function useGoogleAuthFlow() {
         return alFallar('Esta cuenta de Google ya está registrada. Por favor, iniciá sesión.')
       }
 
-      // El perfil se crea recién después de escanear el DNI y elegir nombre
       actualizarFlowData({ email, nombre, proveedor: 'google.com' })
       navigate('confirm-scan')
     })

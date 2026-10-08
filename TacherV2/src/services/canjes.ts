@@ -4,7 +4,6 @@ import type { Canje } from 'src/types'
 
 const COLECCION_CANJES = 'CANJES'
 
-/** Nombres de los campos en Firestore. Si en tu base se llaman distinto, cambialos acá. */
 const CAMPOS = {
   usuario: 'Usuario',
   producto: 'Producto',
@@ -15,7 +14,7 @@ const CAMPOS = {
 
 function aFecha(valor: unknown): Date | string | null {
   const conToDate = valor as { toDate?: () => Date } | null
-  if (conToDate && typeof conToDate.toDate === 'function') return conToDate.toDate() // Timestamp
+  if (conToDate && typeof conToDate.toDate === 'function') return conToDate.toDate()
   if (typeof valor === 'number') return new Date(valor)
   if (typeof valor === 'string') {
     const fecha = new Date(valor)
@@ -37,7 +36,6 @@ function aCanje(docSnap: { id: string; data: () => DocumentData }): Canje {
 
 const enMilisegundos = (fecha: Date | string | null) => (fecha instanceof Date ? fecha.getTime() : 0)
 
-/** Busca los canjes del usuario por nombre y devuelve el más reciente. */
 export async function obtenerUltimoCanje(nombreUsuario: string): Promise<Canje | null> {
   const consulta = query(
     collection(db, COLECCION_CANJES),

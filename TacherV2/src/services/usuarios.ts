@@ -13,7 +13,6 @@ import type { FlowData, Usuario } from 'src/types'
 
 const COLECCION_USUARIOS = 'USUARIOS'
 
-/** El id del documento es el uid que asigna Firebase Auth. */
 const perfilRef = (uid: string) => doc(db, COLECCION_USUARIOS, uid)
 
 function aUsuario(docSnap: { id: string; data: () => DocumentData | undefined }): Usuario {
@@ -24,7 +23,6 @@ export async function existePerfil(uid: string): Promise<boolean> {
   return (await getDoc(perfilRef(uid))).exists()
 }
 
-/** Crea el perfil con los datos acumulados en el registro. La contraseña vive solo en Auth. */
 export async function registrarPerfil(
   uid: string,
   nombre: string,

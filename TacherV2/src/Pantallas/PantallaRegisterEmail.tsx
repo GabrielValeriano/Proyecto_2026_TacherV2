@@ -21,6 +21,7 @@ export function PantallaRegisterEmail() {
   const { navigate, actualizarFlowData, flowData } = useApp()
   const [email, setEmail] = useState(flowData.email ?? '')
   const [contra, setContra] = useState('')
+  const [confirmacion, setConfirmacion] = useState('')
   const [loading, setLoading] = useState(false)
   const { error, setError, limpiarAlEditar } = useErrorDeFormulario()
   const { registrarConGoogle, loadingGoogle } = useGoogleAuthFlow()
@@ -29,7 +30,7 @@ export function PantallaRegisterEmail() {
     setError('')
     const correo = email.trim()
 
-    const errorDeValidacion = validarCredencialesRegistro(correo, contra)
+    const errorDeValidacion = validarCredencialesRegistro(correo, contra, confirmacion)
     if (errorDeValidacion) return setError(errorDeValidacion)
 
     setLoading(true)
@@ -54,19 +55,19 @@ export function PantallaRegisterEmail() {
 
   return (
     <View style={estilos.pantalla}>
-      {/*<ScreenHeader title="Registrarse" onBack={() => navigate('welcome')} />*/}
+      <ScreenHeader title="Registrarse" onBack={() => navigate('welcome')} />
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.formulario}>
-          <TituloDePantalla texto="Crear cuenta" />
+          <TituloDePantalla texto="Registrate" />
 
-          {/*<Text style={estilos.descripcion}>
-            Ingresá un email real para enviar un codigo de verificación. 
-          </Text>*/}
+          <Text style={estilos.descripcion}>
+            Ingresá tu correo y la contraseña que vas a usar para tu cuenta.
+          </Text>
 
           <CampoInput
             label="Correo electrónico"
             keyboardType="email-address"
-            placeholder="nombre@gmail.com"
+            placeholder="nombre@escuela.uba.ar"
             value={email}
             onChangeText={limpiarAlEditar(setEmail)}
             autoCapitalize="none"
@@ -82,6 +83,15 @@ export function PantallaRegisterEmail() {
             icon={<Lock size={16} color={COLORES.verde} />}
           />
 
+          <CampoInput
+            label="Confirmar contraseña"
+            secureTextEntry
+            placeholder="Repetí tu contraseña"
+            value={confirmacion}
+            onChangeText={limpiarAlEditar(setConfirmacion)}
+            icon={<Lock size={16} color={COLORES.verde} />}
+          />
+
           <MensajeError message={error} />
 
           <BotonPrimario
@@ -91,13 +101,13 @@ export function PantallaRegisterEmail() {
             style={estilos.botonSiguiente}
           />
 
-        {/*  <SeparadorO texto="o registrarme con" />
+          <SeparadorO texto="o registrarme con" />
 
           <BotonGoogle
             label="Registrarse con Google"
             onPress={handleGoogle}
             loading={loadingGoogle}
-          />*/}
+          />
         </View>
 
         <EnlaceAlternativo

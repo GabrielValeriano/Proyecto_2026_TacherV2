@@ -30,7 +30,8 @@ export function PantallaRegisterUsername() {
       const uid = obtenerUidActual()
       if (!uid) return setError('Tu sesión expiró. Volvé al inicio e intentá de nuevo.')
 
-      await registrarPerfil(uid, nombreLimpio, flowData)
+      const resultado = await registrarPerfil(uid, nombreLimpio, flowData)
+      if (!resultado.ok) return setError(resultado.mensaje)
       setUserDocId(uid)
       navigate('home')
     } catch (err) {

@@ -10,3 +10,10 @@ export function formatearFecha(fecha: Date | string | null): string {
     minute: '2-digit',
   })
 }
+
+/** 292 -> "4:52" */
+export function formatearTiempo(totalSegundos: number): string {
+  const minutos = Math.floor(totalSegundos / 60)
+  const segundos = totalSegundos % 60
+  return `${minutos}:${String(segundos).padStart(2, '0')}`
+}

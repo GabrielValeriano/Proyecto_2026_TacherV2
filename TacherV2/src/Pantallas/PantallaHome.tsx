@@ -1,23 +1,21 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { ArrowRight, Gift, Info, Leaf, Recycle } from 'lucide-react-native'
-import { BarraDeNavegacion, type PestañaId } from 'src/components/BarraDeNavegacion'
-import { TeacherV2Logo } from 'src/components/TeacherV2Logo'
+import { BookOpen, ChevronRight, Gift, Recycle, LogOut } from 'lucide-react-native'
+import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
+import { BotonPrimario } from 'src/components/BotonPrimario'
+import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
+import { Encabezado } from 'src/components/Encabezado'
 import { useApp } from 'src/context/AppContext'
 import { getResumenRango, type ResumenRango } from 'src/domain/rangos'
+import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useSincronizarRango } from 'src/hooks/useSincronizarRango'
 import { COLORES, SOMBRAS } from 'src/theme'
 
-function EncabezadoBienvenida({ nombre }: { nombre: string }) {
+function Saludo({ nombre }: { nombre: string }) {
   return (
-    <View style={estilos.encabezado}>
-      <View style={estilos.encabezadoTextos}>
-        <Text style={estilos.saludo}>Bienvenido</Text>
-        <Text style={estilos.nombreUsuario}>@{nombre}</Text>
-      </View>
-      <View style={estilos.marcaLogo}>
-        <TeacherV2Logo size={36} />
-      </View>
+    <View>
+      <Text style={estilos.saludo}>Hola de nuevo</Text>
+      <Text style={estilos.nombreUsuario}>@{nombre}</Text>
     </View>
   )
 }
@@ -26,10 +24,9 @@ interface TarjetaPuntosProps {
   puntos: number
   nombreRango: string
   resumen: ResumenRango
-  onIrACanjes: () => void
 }
 
-function TarjetaPuntos({ puntos, nombreRango, resumen, onIrACanjes }: TarjetaPuntosProps) {
+function TarjetaPuntos({ puntos, nombreRango, resumen }: TarjetaPuntosProps) {
   const { actual, proximo, progreso, puntosFaltantes } = resumen
   const IconoRango = actual.icon
 
@@ -39,101 +36,92 @@ function TarjetaPuntos({ puntos, nombreRango, resumen, onIrACanjes }: TarjetaPun
 
   return (
     <View style={estilos.tarjeta}>
-      <View style={estilos.iconoDecorativo}>
-        <Recycle size={176} color={COLORES.blanco} opacity={0.30} />
+      <View style={estilos.circuloDecorativoGrande} />
+      <View style={estilos.circuloDecorativoChico} />
+
+      <Text style={estilos.etiquetaPuntos}>Tus puntos</Text>
+      <Text style={estilos.puntos}>{puntos.toLocaleString('es-AR')}</Text>
+
+      <View style={estilos.chipRango}>
+        <IconoRango size={16} color={COLORES.blanco} />
+        <Text style={estilos.textoRango}>Rango {nombreRango}</Text>
       </View>
 
-      <View style={estilos.tarjetaContenido}>
-        <View>
-          <Text style={estilos.etiquetaPuntos}>Tus puntos</Text>
-          <Text style={estilos.puntos}>{puntos.toLocaleString('es-AR')}</Text>
-
-          <View style={estilos.chipRango}>
-            <IconoRango size={14} color={COLORES.blanco} />
-            <Text style={estilos.textoRango}>Rango {nombreRango}</Text>
-          </View>
-        </View>
-
-        <View style={estilos.bloqueProgreso}>
-          <View style={estilos.barraProgreso}>
-            <View style={[estilos.barraRelleno, { width: `${progreso}%` }]} />
-          </View>
-          <Text style={estilos.textoProgreso}>{mensajeProgreso}</Text>
-        </View>
-
-        <TouchableOpacity activeOpacity={0.8} onPress={onIrACanjes} style={estilos.botonCanjes}>
-          <Gift size={18} color={COLORES.verde} />
-          <Text style={estilos.textoBotonCanjes}>Ir a canjes</Text>
-        </TouchableOpacity>
+      <View style={estilos.barraProgreso}>
+        <View style={[estilos.barraRelleno, { width: `${progreso}%` }]} />
       </View>
+      <Text style={estilos.textoProgreso}>{mensajeProgreso}</Text>
     </View>
   )
 }
 
-function AccesoHistorial({ onPress }: { onPress: () => void }) {
+function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={estilos.acceso}>
       <View style={estilos.accesoIzquierda}>
         <View style={estilos.accesoIcono}>
-          <Leaf size={20} color={COLORES.verde} />
+          <BookOpen size={24} color={COLORES.principal} />
         </View>
         <View>
-          <Text style={estilos.accesoTitulo}>Historial de reciclajes</Text>
-          <Text style={estilos.accesoSubtitulo}>Ver tu actividad</Text>
+          <Text style={estilos.accesoTitulo}>Instrucciones</Text>
+          <Text style={estilos.accesoSubtitulo}>Aprendé a usar TeacherV2</Text>
         </View>
       </View>
-      <ArrowRight size={16} color={COLORES.verde} />
+      <ChevronRight size={22} color={COLORES.principal} />
     </TouchableOpacity>
-  )
-}
-
-function InfoTeacherV2({ onCerrarSesion }: { onCerrarSesion: () => void }) {
-  return (
-    <View style={estilos.info}>
-      <View style={estilos.infoEncabezado}>
-        <Info size={16} color={COLORES.verde} />
-        <Text style={estilos.infoTitulo}>¿Por qué TeacherV2?</Text>
-      </View>
-      <Text style={estilos.infoTexto}>
-        Convertimos el reciclaje en recompensas reales para que cada botella, lata o papel que
-        reciclás tenga un impacto positivo en tu escuela y en el planeta.
-      </Text>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onCerrarSesion}
-        style={estilos.botonCerrarSesion}
-      >
-        <Text style={estilos.textoCerrarSesion}>Cerrar Sesión</Text>
-      </TouchableOpacity>
-    </View>
   )
 }
 
 export function PantallaHome() {
   const { userData, cerrarSesion, navigate, abrirEnDesarrollo } = useApp()
+  const handleTabPress = useNavegacionPestañas()
+
   const puntos = Number(userData?.Puntos) || 0
   const resumenRango = getResumenRango(puntos)
 
   useSincronizarRango(userData, resumenRango.actual.name)
 
-  const handleTabPress = (id: PestañaId, label: string) => {
-    if (id === 'home') return navigate('home')
-    if (id === 'canjes') return navigate('recibo-canje')
-    abrirEnDesarrollo(label)
-  }
-
   return (
     <View style={estilos.pantalla}>
+      <Encabezado />
+
       <ScrollView contentContainerStyle={estilos.contenido}>
-        <EncabezadoBienvenida nombre={userData?.Nombre || 'Usuario'} />
+        <Saludo nombre={userData?.Nombre || 'Usuario'} />
+
         <TarjetaPuntos
           puntos={puntos}
           nombreRango={userData?.Rango || resumenRango.actual.name}
           resumen={resumenRango}
-          onIrACanjes={() => navigate('recibo-canje')}
         />
-        <AccesoHistorial onPress={() => abrirEnDesarrollo('Historial de Reciclajes')} />
-        <InfoTeacherV2 onCerrarSesion={cerrarSesion} />
+
+        <View style={estilos.acciones}>
+          <BotonPrimario
+            label="Canjear"
+            icon={<Gift size={20} color={COLORES.blanco} />}
+            onPress={() => navigate('canjes')}
+            style={estilos.botonAccion}
+          />
+          <BotonPrimario
+            label="Reciclajes"
+            variante="contorno"
+            icon={<Recycle size={20} color={COLORES.principal} />}
+            onPress={() => abrirEnDesarrollo('Historial de Reciclajes')}
+            style={estilos.botonAccion}
+          />
+        </View>
+
+        <CaminoDeRangos puntos={puntos} />
+
+        <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
+
+        {/* Cuando exista la pantalla de Perfil, este botón se muda para allá */}
+        <BotonPrimario
+          label="Cerrar sesión"
+          variante="peligro"
+          icon={<LogOut size={20} color={COLORES.blanco} />}
+          onPress={cerrarSesion}
+          style={estilos.botonCerrarSesion}
+        />
       </ScrollView>
 
       <BarraDeNavegacion activeTab="home" onTabPress={handleTabPress} />
@@ -144,78 +132,68 @@ export function PantallaHome() {
 const estilos = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: 'rgba(240,253,244,0.3)',
+    backgroundColor: COLORES.fondo,
   },
   contenido: {
-    gap: 20,
+    gap: 16,
     paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 24,
+    paddingBottom: 16,
+    paddingTop: 20,
   },
 
-  // --- Encabezado de bienvenida
-  encabezado: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  encabezadoTextos: {
-    gap: 2,
-  },
+  // --- Saludo
   saludo: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    color: COLORES.verde700,
+    fontSize: 15,
+    lineHeight: 20,
+    color: COLORES.textoSuave,
   },
   nombreUsuario: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '700',
-    letterSpacing: -0.5,
-    color: COLORES.gris900,
-  },
-  marcaLogo: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORES.verde200,
-    backgroundColor: COLORES.verde100,
-    padding: 8,
+    letterSpacing: -0.7,
+    color: COLORES.texto,
   },
 
   // --- Tarjeta de puntos
   tarjeta: {
     overflow: 'hidden',
     borderRadius: 24,
-    backgroundColor: COLORES.verde600,
-    padding: 24,
-    ...SOMBRAS.grande,
+    backgroundColor: COLORES.oscuro,
+    padding: 22,
+    ...SOMBRAS.media,
   },
-  iconoDecorativo: {
+  circuloDecorativoGrande: {
     position: 'absolute',
-    right: -24,
-    top: -24,
+    right: -40,
+    top: -40,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: COLORES.principal,
+    opacity: 0.4,
   },
-  tarjetaContenido: {
-    zIndex: 10,
-    justifyContent: 'space-between',
+  circuloDecorativoChico: {
+    position: 'absolute',
+    right: 28,
+    bottom: -56,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORES.principal,
+    opacity: 0.25,
   },
   etiquetaPuntos: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    color: COLORES.verde100,
+    fontSize: 14,
+    lineHeight: 18,
+    color: COLORES.sobreOscuro,
   },
   puntos: {
-    marginTop: 4,
-    fontSize: 48,
-    lineHeight: 48,
-    fontWeight: '800',
-    letterSpacing: -1.2,
+    marginTop: 2,
+    fontSize: 52,
+    lineHeight: 58,
+    fontWeight: '700',
+    letterSpacing: -1.3,
     color: COLORES.blanco,
   },
   chipRango: {
@@ -223,67 +201,58 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 16,
+    marginTop: 12,
     borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   textoRango: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 18,
     color: COLORES.blanco,
-  },
-  bloqueProgreso: {
-    marginTop: 24,
-    gap: 8,
   },
   barraProgreso: {
     width: '100%',
-    height: 8,
+    height: 10,
+    marginTop: 18,
     overflow: 'hidden',
     borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   barraRelleno: {
     height: '100%',
     borderRadius: 9999,
-    backgroundColor: COLORES.amarillo400,
+    backgroundColor: COLORES.acento,
   },
   textoProgreso: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: COLORES.verde100,
-  },
-  botonCanjes: {
-    width: '100%',
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 24,
-    borderRadius: 16,
-    backgroundColor: COLORES.blanco,
-    ...SOMBRAS.chica,
-  },
-  textoBotonCanjes: {
-    fontWeight: '600',
-    color: COLORES.verde600,
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 18,
+    color: COLORES.sobreOscuro,
   },
 
-  // --- Acceso al historial
+  // --- Botones Canjear / Historial
+  acciones: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  botonAccion: {
+    flex: 1,
+    width: 'auto',
+    height: 56,
+  },
+
+  // --- Acceso a Instrucciones
   acceso: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORES.verde200,
+    borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
     padding: 16,
-    ...SOMBRAS.chica,
   },
   accesoIzquierda: {
     flexDirection: 'row',
@@ -291,65 +260,26 @@ const estilos = StyleSheet.create({
     gap: 14,
   },
   accesoIcono: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: COLORES.verde100,
+    borderRadius: 14,
+    backgroundColor: COLORES.suave,
   },
   accesoTitulo: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 22,
     fontWeight: '600',
-    color: COLORES.gris900,
+    color: COLORES.texto,
   },
   accesoSubtitulo: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: COLORES.gris500,
-  },
-
-  // --- Bloque "¿Por qué TeacherV2?"
-  info: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORES.verde200,
-    backgroundColor: 'rgba(220,252,231,0.5)',
-    padding: 20,
-  },
-  infoEncabezado: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoTitulo: {
     fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    letterSpacing: -0.35,
-    color: COLORES.verde800,
-  },
-  infoTexto: {
-    marginTop: 8,
-    fontSize: 12,
-    lineHeight: 19.5,
-    color: COLORES.gris600,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
   },
   botonCerrarSesion: {
-    alignSelf: 'flex-start',
-    marginTop: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORES.verde300,
-    backgroundColor: COLORES.blanco,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  textoCerrarSesion: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
-    color: COLORES.verde700,
+    height: 56,
+    marginTop: 4,
   },
 })

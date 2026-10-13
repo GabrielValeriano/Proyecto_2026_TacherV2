@@ -13,6 +13,9 @@ import { PantallaWelcome } from '@/src/Pantallas/PantallaWelcome'
 import { ReciboDeCanje } from '@/src/Pantallas/ReciboDeCanje'
 import { configurarGoogleSignIn } from 'src/services/googleAuth'
 import type { Pantalla } from 'src/types'
+import { PantallaCanjes } from 'src/Pantallas/PantallaCanjes'
+import { PantallaSeleccionarProducto } from 'src/Pantallas/PantallaSeleccionarProducto'
+import { PantallaGenerarQr } from 'src/Pantallas/PantallaGenerarQr'
 
 configurarGoogleSignIn()
 
@@ -26,6 +29,10 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   home: PantallaHome,
   'recibo-canje': ReciboDeCanje,
   'en-desarrollo': PantallaEnDesarrollo,
+  'canjes': PantallaCanjes,
+  'seleccionar-producto': PantallaSeleccionarProducto,
+  'generar-qr': PantallaGenerarQr,
+
 }
 
 function PantallaActiva() {

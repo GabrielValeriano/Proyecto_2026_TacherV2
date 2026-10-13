@@ -32,7 +32,7 @@ const estilos = StyleSheet.create({
   icono: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 40,
     backgroundColor: COLORES.verde600,
   },
   nombre: {

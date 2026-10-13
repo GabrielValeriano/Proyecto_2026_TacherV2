@@ -41,11 +41,7 @@ export function PantallaLoginEmail() {
       if (await existePerfil(resultado.uid)) {
         setUserDocId(resultado.uid)
         navigate('home')
-      } else {
-        // Registro que quedó a medias: se retoma en el escaneo de DNI
-        actualizarFlowData({ email: correo, proveedor: 'email' })
-        navigate('confirm-scan')
-      }
+      } 
     } catch (err) {
       console.error('Error al iniciar sesión:', err)
       setError('Error al conectar con el servidor: ' + mensajeDeError(err, 'Intentalo más tarde.'))
@@ -61,7 +57,7 @@ export function PantallaLoginEmail() {
 
   return (
     <View style={estilos.pantalla}>
-      {/*<ScreenHeader title="Iniciar Sesión" onBack={() => navigate('welcome')} />*/}
+      <ScreenHeader title="Iniciar Sesión" onBack={() => navigate('welcome')} />
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.formulario}>
           <TituloDePantalla texto="Ingresar cuenta" />
@@ -89,13 +85,13 @@ export function PantallaLoginEmail() {
 
           <BotonPrimario label="Iniciar Sesión" onPress={handleIniciarSesion} loading={loading} />
 
-         {/* <SeparadorO texto="o iniciar sesión con" />
+         <SeparadorO texto="o iniciar sesión con" />
 
           <BotonGoogle
             label="Iniciar sesión con Google"
             onPress={handleGoogle}
             loading={loadingGoogle}
-          />*/}
+          />
         </View>
 
         <EnlaceAlternativo

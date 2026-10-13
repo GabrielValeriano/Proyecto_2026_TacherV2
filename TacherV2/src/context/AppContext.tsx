@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { cerrarSesionFirebase } from 'src/services/autenticacion'
 import { escucharUsuario } from 'src/services/usuarios'
-import type { AppContextValue, FlowData, Pantalla, Usuario } from 'src/types'
+import type { AppContextValue, FlowData, Pantalla, Usuario, Producto } from 'src/types'
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -12,8 +12,9 @@ export function useApp(): AppContextValue {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [pantallaActual, setPantallaActual] = useState<Pantalla>('register-username')
+  const [pantallaActual, setPantallaActual] = useState<Pantalla>('welcome')
   const [seccionEnDesarrollo, setSeccionEnDesarrollo] = useState('')
+  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
   const [userDocId, setUserDocId] = useState<string | null>(null)
   const [userData, setUserData] = useState<Usuario | null>(null)
   const [flowData, setFlowData] = useState<FlowData>({})
@@ -41,7 +42,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cerrarSesionFirebase().catch((error) => console.error('Error al cerrar sesión:', error))
     setUserDocId(null)
     setFlowData({})
-    setPantallaActual('login-email')
+    setPantallaActual('welcome')
+  }
+
+  const seleccionarProducto = (producto: Producto) => {
+    setProductoSeleccionado(producto)
+    setPantallaActual('seleccionar-producto')
   }
 
   return (
@@ -56,6 +62,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         actualizarFlowData,
         setUserDocId,
         cerrarSesion,
+        productoSeleccionado,
+        seleccionarProducto,
       }}
     >
       {children}

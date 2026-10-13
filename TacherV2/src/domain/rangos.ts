@@ -1,4 +1,4 @@
-import { Award, Leaf, Zap, type LucideIcon } from 'lucide-react-native'
+import { Leaf, Sprout, Flower2, TreeDeciduous, type LucideIcon, Trees } from 'lucide-react-native'
 
 export interface Rango {
   name: string
@@ -7,9 +7,11 @@ export interface Rango {
 }
 
 export const RANGOS: Rango[] = [
-  { name: 'Brote', min: 0, icon: Leaf },
-  { name: 'Planta', min: 500, icon: Zap },
-  { name: 'Arbol', min: 2000, icon: Award },
+  { name: 'Hoja', min: 0, icon: Leaf },
+  { name: 'Brote', min: 100, icon: Sprout },
+  { name: 'Planta', min: 500, icon: Flower2 },
+  { name: 'Arbol', min: 1000, icon: TreeDeciduous },
+  { name: 'Bosque', min: 2000, icon: Trees },
 ]
 
 export function getRangoParaPuntos(puntos = 0): Rango {

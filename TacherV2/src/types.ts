@@ -8,6 +8,9 @@ export type Pantalla =
   | 'home'
   | 'recibo-canje'
   | 'en-desarrollo'
+  | 'canjes'
+  | 'seleccionar-producto'
+  | 'generar-qr'
 
 export type ProveedorAuth = 'email' | 'google.com'
 
@@ -40,6 +43,8 @@ export interface AppContextValue {
   actualizarFlowData: (parcial: FlowData) => void
   setUserDocId: (id: string | null) => void
   cerrarSesion: () => void
+  productoSeleccionado: Producto | null
+  seleccionarProducto: (producto: Producto) => void
 }
 
 export interface Canje {
@@ -49,4 +54,21 @@ export interface Canje {
   codigo: string
   /** Date si Firestore la guarda como fecha; string si viene como texto no parseable. */
   fecha: Date | string | null
+}
+
+export interface Producto {
+  id: string
+  nombre: string
+  puntos: number
+  imagen: string | null
+  disponible: boolean
+  descripcion: string
+  categoria: string
+}
+
+export type ValidacionCanje = 'pendiente' | 'finalizado' | 'cancelado'
+
+export interface CanjePendiente {
+  id: string
+  vence: Date
 }

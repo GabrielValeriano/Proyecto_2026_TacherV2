@@ -1,13 +1,13 @@
 import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { Gift, Home, Recycle, User } from 'lucide-react-native'
-import { COLORES } from 'src/theme'
+import { Gift, Home, Trophy, User } from 'lucide-react-native'
+import { COLORES, SOMBRAS } from 'src/theme'
 
 export type PestañaId = 'home' | 'ranking' | 'canjes' | 'perfil'
 
 const PESTAÑAS = [
   { id: 'home', label: 'Inicio', icon: Home },
-  { id: 'ranking', label: 'Ranking', icon: Recycle },
+  { id: 'ranking', label: 'Ranking', icon: Trophy },
   { id: 'canjes', label: 'Canjes', icon: Gift },
   { id: 'perfil', label: 'Perfil', icon: User },
 ] as const
@@ -27,9 +27,9 @@ export function BarraDeNavegacion({ activeTab, onTabPress }: Props) {
             key={id}
             activeOpacity={0.7}
             onPress={() => onTabPress(id, label)}
-            style={estilos.pestaña}
+            style={[estilos.pestaña, activa && estilos.pestañaActiva]}
           >
-            <Icono size={22} color={activa ? COLORES.verde : COLORES.gris} />
+            <Icono size={24} color={activa ? COLORES.oscuro : COLORES.textoSuave} />
             <Text style={[estilos.etiqueta, activa && estilos.etiquetaActiva]}>{label}</Text>
           </TouchableOpacity>
         )
@@ -41,28 +41,34 @@ export function BarraDeNavegacion({ activeTab, onTabPress }: Props) {
 const estilos = StyleSheet.create({
   contenedor: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    gap: 4,
+    marginHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 14,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
-    borderTopWidth: 1,
-    borderTopColor: COLORES.verde100,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    elevation: 5,
+    padding: 6,
+    ...SOMBRAS.chica,
   },
   pestaña: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    gap: 3,
+    borderRadius: 20,
+    paddingVertical: 10,
+  },
+  pestañaActiva: {
+    backgroundColor: COLORES.suave,
   },
   etiqueta: {
-    marginTop: 4,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 16,
-    fontWeight: '500',
-    color: COLORES.gris400,
+    color: COLORES.textoSuave,
   },
   etiquetaActiva: {
-    color: COLORES.verde600,
+    fontWeight: '600',
+    color: COLORES.oscuro,
   },
 })

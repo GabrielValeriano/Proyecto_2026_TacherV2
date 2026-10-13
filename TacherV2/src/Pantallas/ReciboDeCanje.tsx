@@ -231,7 +231,7 @@ const estilos = StyleSheet.create({
     gap: 8,
     marginTop: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(22,163,74,0.1)',
+    backgroundColor: COLORES.verde100,
     paddingVertical: 10,
   },
   insigniaTexto: {

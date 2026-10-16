@@ -8,6 +8,7 @@ export function useNavegacionPestañas() {
   return (id: PestañaId, label: string) => {
     if (id === 'home') return navigate('home')
     if (id === 'canjes') return navigate('canjes')
+    if (id === 'ranking') return navigate('ranking')
     abrirEnDesarrollo(label) // Ranking y Perfil, por ahora en desarrollo
   }
 }

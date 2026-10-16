@@ -105,7 +105,7 @@ export function PantallaHome() {
             label="Reciclajes"
             variante="contorno"
             icon={<Recycle size={20} color={COLORES.principal} />}
-            onPress={() => abrirEnDesarrollo('Historial de Reciclajes')}
+            onPress={() => navigate('historial-reciclajes')}
             style={estilos.botonAccion}
           />
         </View>

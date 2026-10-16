@@ -11,6 +11,8 @@ export type Pantalla =
   | 'canjes'
   | 'seleccionar-producto'
   | 'generar-qr'
+  | 'historial-reciclajes'
+  | 'ranking'
 
 export type ProveedorAuth = 'email' | 'google.com'
 

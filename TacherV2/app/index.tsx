@@ -16,6 +16,8 @@ import type { Pantalla } from 'src/types'
 import { PantallaCanjes } from 'src/Pantallas/PantallaCanjes'
 import { PantallaSeleccionarProducto } from 'src/Pantallas/PantallaSeleccionarProducto'
 import { PantallaGenerarQr } from 'src/Pantallas/PantallaGenerarQr'
+import { PantallaHistorialReciclajes } from '@/src/Pantallas/PantallaHistorialReciclajes'
+import { PantallaRanking } from '@/src/Pantallas/PantallaRanking'
 
 configurarGoogleSignIn()
 
@@ -32,6 +34,8 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'canjes': PantallaCanjes,
   'seleccionar-producto': PantallaSeleccionarProducto,
   'generar-qr': PantallaGenerarQr,
+  'historial-reciclajes': PantallaHistorialReciclajes,
+  'ranking': PantallaRanking
 
 }
 

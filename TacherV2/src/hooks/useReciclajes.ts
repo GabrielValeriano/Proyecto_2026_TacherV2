@@ -1,34 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useDatosConCache } from 'src/hooks/useDatosConCache'
 import { obtenerUltimosReciclajes, type Reciclaje } from 'src/services/reciclajes'
+import { CLAVES } from 'src/utils/cache'
 
 export function useReciclajes(uid?: string) {
-  const [reciclajes, setReciclajes] = useState<Reciclaje[]>([])
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
+  const { datos, cargando, error } = useDatosConCache<Reciclaje[]>(
+    uid ? CLAVES.reciclajes(uid) : null,
+    () => obtenerUltimosReciclajes(uid ?? ''),
+    [],
+    'No se pudo cargar tu historial. Intentalo de nuevo más tarde.',
+  )
 
-  useEffect(() => {
-    if (!uid) return
-
-    let cancelado = false
-    setCargando(true)
-    setError('')
-
-    obtenerUltimosReciclajes(uid)
-      .then((resultado) => {
-        if (!cancelado) setReciclajes(resultado)
-      })
-      .catch((err) => {
-        console.error('Error al cargar los reciclajes:', err)
-        if (!cancelado) setError('No se pudo cargar tu historial. Intentalo de nuevo más tarde.')
-      })
-      .finally(() => {
-        if (!cancelado) setCargando(false)
-      })
-
-    return () => {
-      cancelado = true
-    }
-  }, [uid])
-
-  return { reciclajes, cargando, error }
+  return { reciclajes: datos, cargando, error }
 }

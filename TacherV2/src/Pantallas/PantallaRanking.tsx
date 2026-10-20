@@ -1,13 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native'
-import { Crown, Recycle, Sparkles, Trophy } from 'lucide-react-native'
+import { Crown, Recycle, Sparkles, ChevronDown, ChevronUp, User } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { Encabezado } from 'src/components/Encabezado'
 import { MensajeError } from 'src/components/MensajeError'
@@ -17,17 +18,26 @@ import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useRanking } from 'src/hooks/useRanking'
 import type { PuestoRanking } from 'src/services/ranking'
 import { COLORES, SOMBRAS } from 'src/theme'
+import { EsqueletoPodio } from 'src/components/EsqueletoPodio'
 
-/** Orden de las columnas: segundo, primero, tercero (el primero va al medio). */
-const ORDEN_PODIO = [1, 0, 2]
-const ALTURAS_PODIO = [124, 92, 68]
-const MEDALLAS = [COLORES.acento, '#CBD5D0', '#D79A63'] // oro, plata, bronce
+// ---------------------------------------------------------------------------
+// Constantes del podio
+// ---------------------------------------------------------------------------
 
-/** Qué representa cada rango. La clave es el nombre del rango en domain/rangos.ts. */
+const ORDEN_PODIO = [1, 0, 2] // Segundo, Primero, Tercero
+
+// ---------------------------------------------------------------------------
+// Guía de rangos (5 rangos)
+// ---------------------------------------------------------------------------
+
 const GUIA_RANGOS: Record<string, { titulo: string; descripcion: string }> = {
   Brote: {
     titulo: 'Brote',
     descripcion: 'Estás empezando. Cada botella que reciclás es una semilla que empieza a crecer.',
+  },
+  Hoja: {
+    titulo: 'Hoja',
+    descripcion: 'Tomás impulso. Tu compromiso empieza a verdecer en la comunidad.',
   },
   Planta: {
     titulo: 'Planta',
@@ -37,9 +47,12 @@ const GUIA_RANGOS: Record<string, { titulo: string; descripcion: string }> = {
     titulo: 'Árbol',
     descripcion: 'Sos un referente. Tu impacto es duradero y le da sombra a toda la comunidad.',
   },
+  Bosque: {
+    titulo: 'Bosque',
+    descripcion: 'Máximo nivel alcanzado. Tu liderazgo ecológico transforma todo el entorno.',
+  },
 }
 
-/** Cada rango se ve más intenso que el anterior: claro, medio y oscuro. */
 const TEMAS_RANGO = [
   {
     fondo: COLORES.suave,
@@ -52,6 +65,16 @@ const TEMAS_RANGO = [
     pildoraTexto: COLORES.verde700,
   },
   {
+    fondo: COLORES.blanco,
+    borde: COLORES.linea,
+    circulo: COLORES.verde700,
+    icono: COLORES.blanco,
+    titulo: COLORES.texto,
+    texto: COLORES.textoSuave,
+    pildoraFondo: COLORES.suave,
+    pildoraTexto: COLORES.verde700,
+  },
+  {
     fondo: COLORES.principal,
     borde: COLORES.principal,
     circulo: 'rgba(255,255,255,0.22)',
@@ -60,6 +83,16 @@ const TEMAS_RANGO = [
     texto: 'rgba(255,255,255,0.9)',
     pildoraFondo: 'rgba(255,255,255,0.22)',
     pildoraTexto: COLORES.blanco,
+  },
+  {
+    fondo: '#2D4A3E',
+    borde: '#2D4A3E',
+    circulo: COLORES.acento,
+    icono: COLORES.oscuro,
+    titulo: COLORES.blanco,
+    texto: '#E2E8F0',
+    pildoraFondo: 'rgba(255,255,255,0.15)',
+    pildoraTexto: COLORES.acento,
   },
   {
     fondo: COLORES.oscuro,
@@ -74,7 +107,7 @@ const TEMAS_RANGO = [
 ]
 
 // ---------------------------------------------------------------------------
-// Adornos y Skeletons
+// Adornos
 // ---------------------------------------------------------------------------
 
 function Destello({
@@ -91,61 +124,8 @@ function Destello({
   )
 }
 
-function Trofeo() {
-  return (
-    <View style={estilos.trofeoContenedor}>
-      <View style={estilos.trofeoHalo} />
-      <View style={estilos.trofeoCirculo}>
-        <Trophy size={44} color={COLORES.oscuro} />
-      </View>
-    </View>
-  )
-}
-
-/** Componente Skeleton individual para cada columna del podio */
-function ColumnaPodioSkeleton({ indice }: { indice: number }) {
-  const tamañoAvatar = indice === 0 ? 76 : 60
-
-  return (
-    <View style={estilos.columna}>
-      <View style={estilos.datosPuesto}>
-        <View
-          style={[
-            estilos.avatar,
-            estilos.skeletonBase,
-            {
-              width: tamañoAvatar,
-              height: tamañoAvatar,
-              borderRadius: tamañoAvatar / 2,
-            },
-          ]}
-        />
-        <View style={[estilos.skeletonBase, estilos.skeletonTextoNombrePodio]} />
-      </View>
-      <View
-        style={[
-          estilos.bloque,
-          estilos.skeletonBase,
-          { height: ALTURAS_PODIO[indice] },
-        ]}
-      />
-    </View>
-  )
-}
-
-/** Podio Skeleton completo */
-function PodioSkeleton() {
-  return (
-    <View style={estilos.podio}>
-      {ORDEN_PODIO.map((indice) => (
-        <ColumnaPodioSkeleton key={indice} indice={indice} />
-      ))}
-    </View>
-  )
-}
-
 // ---------------------------------------------------------------------------
-// Podio (top 3) real
+// Podio (Top 3 grande, compacto y estilizado como la referencia)
 // ---------------------------------------------------------------------------
 
 interface ColumnaPodioProps {
@@ -155,60 +135,58 @@ interface ColumnaPodioProps {
 }
 
 function ColumnaPodio({ indice, puesto, esUsuario }: ColumnaPodioProps) {
-  const medalla = MEDALLAS[indice]
-  const tamañoAvatar = indice === 0 ? 76 : 60
+  const esPrimero = indice === 0
+  const tamañoAvatar = esPrimero ? 90 : 72 // Más grandes para que no se vean chiquitos
 
   return (
-    <View style={estilos.columna}>
-      <View style={estilos.datosPuesto}>
-        {indice === 0 && puesto && <Crown size={30} color={COLORES.acento} />}
-        {esUsuario && <Text style={estilos.etiquetaVos}>Vos</Text>}
-
-        <View
-          style={[
-            estilos.avatar,
-            {
-              width: tamañoAvatar,
-              height: tamañoAvatar,
-              borderRadius: tamañoAvatar / 2,
-              borderColor: medalla,
-            },
-            !puesto && estilos.avatarVacio,
-          ]}
-        >
-          <Text style={[estilos.avatarInicial, indice === 0 && estilos.avatarInicialGrande]}>
-            {puesto ? puesto.nombre.charAt(0).toUpperCase() : '?'}
-          </Text>
+    <View style={[estilos.columnaPodio, esPrimero && estilos.columnaPodioCentro]}>
+      {/* Corona más grande exclusivamente para el puesto 1 */}
+      {esPrimero && puesto && (
+        <View style={estilos.coronaContainer}>
+          <Crown size={38} color={COLORES.acento} />
         </View>
+      )}
 
-        <Text style={estilos.nombrePodio} numberOfLines={1}>
-          {puesto ? puesto.nombre : 'Libre'}
-        </Text>
-
-        {puesto && (
-          <View style={[estilos.cantidadPodio, { backgroundColor: medalla }]}>
-            <Recycle size={14} color={COLORES.oscuro} />
-            <Text style={estilos.cantidadPodioTexto}>{puesto.cantidad.toLocaleString('es-AR')}</Text>
-          </View>
-        )}
-      </View>
+      {/* Número de puesto solo para el 2 y 3, con color bien visible */}
+      {!esPrimero && (
+        <Text style={estilos.numeroPuestoPodio}>{indice + 1}</Text>
+      )}
 
       <View
         style={[
-          estilos.bloque,
-          { height: ALTURAS_PODIO[indice], backgroundColor: medalla },
-          !puesto && estilos.bloqueVacio,
+          estilos.avatarPodioEstiloFoto,
+          {
+            width: tamañoAvatar,
+            height: tamañoAvatar,
+            borderRadius: tamañoAvatar / 2,
+            borderColor: esUsuario ? COLORES.acento : 'rgba(255, 255, 255, 0.25)',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+          !puesto && estilos.avatarVacio,
         ]}
       >
-        <Text style={estilos.numeroPuesto}>{indice + 1}</Text>
+        <User size={esPrimero ? 44 : 34} color={esUsuario ? COLORES.acento : COLORES.blanco} />
       </View>
+
+      <Text style={estilos.nombrePodio} numberOfLines={1}>
+        {puesto ? puesto.nombre : 'Libre'}
+      </Text>
+
+      {puesto && (
+        <View style={estilos.puntosPodioFila}>
+          <Recycle size={14} color={COLORES.acento} />
+          <Text style={estilos.puntosPodioTexto}>
+            {puesto.cantidad.toLocaleString('es-AR')}
+          </Text>
+        </View>
+      )}
     </View>
   )
 }
 
 function Podio({ puestos, usuarioId }: { puestos: PuestoRanking[]; usuarioId?: string }) {
   return (
-    <View style={estilos.podio}>
+    <View style={estilos.podioContainer}>
       {ORDEN_PODIO.map((indice) => (
         <ColumnaPodio
           key={indice}
@@ -222,7 +200,7 @@ function Podio({ puestos, usuarioId }: { puestos: PuestoRanking[]; usuarioId?: s
 }
 
 // ---------------------------------------------------------------------------
-// Puestos 4 y 5
+// Fila de Puestos en Cápsulas (4 en adelante)
 // ---------------------------------------------------------------------------
 
 interface FilaPuestoProps {
@@ -233,25 +211,25 @@ interface FilaPuestoProps {
 
 function FilaPuesto({ puesto, posicion, esUsuario }: FilaPuestoProps) {
   return (
-    <View style={[estilos.fila, esUsuario && estilos.filaUsuario]}>
-      <View style={estilos.posicionCirculo}>
-        <Text style={estilos.posicionTexto}>{posicion}</Text>
+    <View style={[estilos.filaCapsula, esUsuario && estilos.filaCapsulaUsuario]}>
+      <View style={estilos.capsulaIzquierda}>
+        <Text style={estilos.capsulaPosicion}>{posicion}</Text>
+        <View style={estilos.capsulaAvatar}>
+          <User size={20} color={esUsuario ? COLORES.acento : COLORES.blanco} />
+        </View>
+        <View style={estilos.capsulaTextos}>
+          <Text style={estilos.capsulaNombre} numberOfLines={1}>
+            {puesto.nombre}
+          </Text>
+          {esUsuario && <Text style={estilos.capsulaVos}>Vos</Text>}
+        </View>
       </View>
 
-      <View style={estilos.filaTextos}>
-        <Text style={estilos.filaNombre} numberOfLines={1}>
-          {puesto.nombre}
+      <View style={estilos.capsulaPuntosContenedor}>
+        <Recycle size={16} color={COLORES.acento} />
+        <Text style={estilos.capsulaPuntos}>
+          {puesto.cantidad.toLocaleString('es-AR')}
         </Text>
-        {esUsuario && (
-          <View style={estilos.insigniaVos}>
-            <Text style={estilos.insigniaVosTexto}>Vos</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={estilos.cantidadFila}>
-        <Recycle size={18} color={COLORES.verde700} />
-        <Text style={estilos.cantidadFilaTexto}>{puesto.cantidad.toLocaleString('es-AR')}</Text>
       </View>
     </View>
   )
@@ -274,7 +252,7 @@ function TarjetaRango({ rango, indice, esActual }: { rango: Rango; indice: numbe
   return (
     <View style={[estilos.tarjetaRango, { backgroundColor: tema.fondo, borderColor: tema.borde }]}>
       <View style={[estilos.circuloRango, { backgroundColor: tema.circulo }]}>
-        <Icono size={32} color={tema.icono} />
+        <Icono size={26} color={tema.icono} />
       </View>
 
       <View style={estilos.rangoTextos}>
@@ -299,11 +277,11 @@ function TarjetaRango({ rango, indice, esActual }: { rango: Rango; indice: numbe
 
 function GuiaRangos({ indiceActual }: { indiceActual: number }) {
   return (
-    <View style={estilos.guia}>
+    <View style={estilos.guiaContainer}>
       <View style={estilos.guiaEncabezado}>
         <Text style={estilos.tituloSeccion}>Guía de rangos</Text>
         <Text style={estilos.subtituloSeccion}>
-          Cada reciclaje en la caja te da puntos. Sumalos y hacé crecer tu rango.
+          Cada reciclaje en la caja te da puntos para crecer de rango.
         </Text>
       </View>
 
@@ -315,33 +293,34 @@ function GuiaRangos({ indiceActual }: { indiceActual: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Pantalla
+// Pantalla Principal
 // ---------------------------------------------------------------------------
 
 export function PantallaRanking() {
   const { userData } = useApp()
   const handleTabPress = useNavegacionPestañas()
   const { puestos, cargando, error } = useRanking()
+  const [mostrarTodos, setMostrarTodos] = useState(false)
 
   const puntos = Number(userData?.Puntos) || 0
   const indiceRango = RANGOS.indexOf(getRangoParaPuntos(puntos))
+  
   const podio = puestos.slice(0, 3)
-  const restantes = puestos.slice(3, 5)
+  const puestosRestantes = puestos.slice(3, 10)
+  const visibles = mostrarTodos ? puestosRestantes : puestosRestantes.slice(0, 3)
 
   return (
     <View style={estilos.pantalla}>
       <Encabezado />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={estilos.hero}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={estilos.scrollContainer}>
+        
+        {/* Bloque Principal */}
+        <View style={estilos.heroContainer}>
           <View style={estilos.circuloDecorativoUno} />
           <View style={estilos.circuloDecorativoDos} />
-          <Destello posicion={estilos.destelloUno} tamaño={22} />
+          <Destello posicion={estilos.destelloUno} tamaño={20} />
           <Destello posicion={estilos.destelloDos} />
-          <Destello posicion={estilos.destelloTres} tamaño={16} />
-          <Destello posicion={estilos.destelloCuatro} tamaño={20} />
-
-          <Trofeo />
 
           <Text style={estilos.titulo}>
             Ranking de{'\n'}
@@ -350,7 +329,7 @@ export function PantallaRanking() {
           <Text style={estilos.subtituloHero}>Los 10 que más reciclan en la caja TeacherV2</Text>
 
           {cargando ? (
-            <PodioSkeleton />
+            <EsqueletoPodio />
           ) : error ? (
             <View style={estilos.estadoHero}>
               <MensajeError message={error} />
@@ -362,13 +341,11 @@ export function PantallaRanking() {
           ) : (
             <Podio puestos={podio} usuarioId={userData?.id} />
           )}
-        </View>
 
-        <View style={estilos.cuerpo}>
-          {restantes.length > 0 && (
-            <View style={estilos.seccionFilas}>
-              <Text style={estilos.etiquetaSeccion}>Siguen en el top 10</Text>
-              {restantes.map((puesto, indice) => (
+          {/* Lista de posiciones en cápsulas translúcidas */}
+          {puestosRestantes.length > 0 && (
+            <View style={estilos.capsulasContainer}>
+              {visibles.map((puesto, indice) => (
                 <FilaPuesto
                   key={puesto.id}
                   puesto={puesto}
@@ -376,11 +353,32 @@ export function PantallaRanking() {
                   esUsuario={Boolean(userData?.id) && puesto.id === userData?.id}
                 />
               ))}
+
+              {puestosRestantes.length > 3 && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setMostrarTodos(!mostrarTodos)}
+                  style={estilos.botonVerMasOscuro}
+                >
+                  <Text style={estilos.textoBotonVerMasOscuro}>
+                    {mostrarTodos ? 'Ver menos' : 'Ver más posiciones'}
+                  </Text>
+                  {mostrarTodos ? (
+                    <ChevronUp size={16} color={COLORES.acento} />
+                  ) : (
+                    <ChevronDown size={16} color={COLORES.acento} />
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           )}
+        </View>
 
+        {/* Sección inferior: Guía de Rangos */}
+        <View style={estilos.cuerpoInferior}>
           <GuiaRangos indiceActual={indiceRango} />
         </View>
+
       </ScrollView>
 
       <BarraDeNavegacion activeTab="ranking" onTabPress={handleTabPress} />
@@ -393,35 +391,37 @@ const estilos = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORES.fondo,
   },
+  scrollContainer: {
+    paddingBottom: 36,
+  },
 
-  // --- Zona oscura de arriba
-  hero: {
+  heroContainer: {
     alignItems: 'center',
     overflow: 'hidden',
     borderBottomLeftRadius: 36,
     borderBottomRightRadius: 36,
     backgroundColor: COLORES.oscuro,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
   circuloDecorativoUno: {
     position: 'absolute',
-    left: -70,
-    top: -40,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+    left: -60,
+    top: -30,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     backgroundColor: COLORES.principal,
     opacity: 0.25,
   },
   circuloDecorativoDos: {
     position: 'absolute',
-    right: -80,
-    bottom: 70,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
+    right: -70,
+    bottom: 120,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     backgroundColor: COLORES.principal,
     opacity: 0.18,
   },
@@ -429,286 +429,222 @@ const estilos = StyleSheet.create({
     position: 'absolute',
     opacity: 0.75,
   },
-  destelloUno: {
-    left: 28,
-    top: 30,
-  },
-  destelloDos: {
-    right: 34,
-    top: 64,
-  },
-  destelloTres: {
-    left: 52,
-    top: 190,
-  },
-  destelloCuatro: {
-    right: 26,
-    top: 230,
-  },
-  trofeoContenedor: {
-    width: 116,
-    height: 116,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trofeoHalo: {
-    position: 'absolute',
-    width: 116,
-    height: 116,
-    borderRadius: 58,
-    backgroundColor: COLORES.acento,
-    opacity: 0.22,
-  },
-  trofeoCirculo: {
-    width: 88,
-    height: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 44,
-    backgroundColor: COLORES.acento,
-    ...SOMBRAS.grande,
-  },
+  destelloUno: { left: 24, top: 20 },
+  destelloDos: { right: 28, top: 50 },
+
   titulo: {
-    marginTop: 20,
+    marginTop: 10,
     textAlign: 'center',
-    fontSize: 40,
-    lineHeight: 46,
+    fontSize: 34,
+    lineHeight: 40,
     fontWeight: '800',
-    letterSpacing: -1.2,
+    letterSpacing: -1,
     color: COLORES.blanco,
   },
   tituloAcento: {
     color: COLORES.acento,
   },
   subtituloHero: {
-    marginTop: 10,
+    marginTop: 6,
     textAlign: 'center',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     color: COLORES.sobreOscuro,
-  },
-  cargando: {
-    marginTop: 40,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   estadoHero: {
     width: '100%',
-    marginTop: 24,
+    marginTop: 20,
   },
   sinRanking: {
-    marginTop: 28,
+    marginTop: 24,
     textAlign: 'center',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
     color: COLORES.sobreOscuro,
   },
 
-  // --- Podio
-  podio: {
+  // Podio ajustado, más grande y junto
+  podioContainer: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
-    gap: 10,
-    marginTop: 32,
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 24,
   },
-  columna: {
+  columnaPodio: {
     flex: 1,
     alignItems: 'center',
   },
-  datosPuesto: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+  columnaPodioCentro: {
+    transform: [{ translateY: -16 }],
   },
-  etiquetaVos: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '700',
-    color: COLORES.acento,
+  coronaContainer: {
+    marginBottom: -6,
+    zIndex: 2,
   },
-  avatar: {
+  numeroPuestoPodio: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORES.blanco,
+    marginBottom: 4,
+  },
+  avatarPodioEstiloFoto: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 2.5,
   },
   avatarVacio: {
     borderStyle: 'dashed',
     opacity: 0.5,
   },
-  avatarInicial: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: COLORES.blanco,
-  },
-  avatarInicialGrande: {
-    fontSize: 32,
-    lineHeight: 38,
-  },
   nombrePodio: {
     width: '100%',
     textAlign: 'center',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: COLORES.blanco,
+    marginTop: 8,
   },
-  cantidadPodio: {
+  puntosPodioFila: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    marginTop: 3,
   },
-  cantidadPodioTexto: {
-    fontSize: 15,
-    lineHeight: 19,
+  puntosPodioTexto: {
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORES.oscuro,
-  },
-  bloque: {
-    width: '100%',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    paddingTop: 8,
-  },
-  bloqueVacio: {
-    opacity: 0.3,
-  },
-  numeroPuesto: {
-    fontSize: 36,
-    lineHeight: 42,
-    fontWeight: '800',
-    color: COLORES.oscuro,
-    opacity: 0.75,
+    color: COLORES.acento,
   },
 
-  // --- Zona clara de abajo
-  cuerpo: {
-    gap: 28,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  seccionFilas: {
+  capsulasContainer: {
+    width: '100%',
     gap: 10,
   },
-  etiquetaSeccion: {
-    fontSize: 30,
-    lineHeight: 50,
-    fontWeight: '600',
-    color: COLORES.texto,
+  filaCapsula: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 9999,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  fila: {
+  filaCapsulaUsuario: {
+    borderColor: COLORES.acento,
+    backgroundColor: 'transparent',
+  },
+  capsulaIzquierda: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORES.linea,
-    backgroundColor: COLORES.blanco,
-    padding: 14,
-    ...SOMBRAS.chica,
+    flex: 1,
   },
-  filaUsuario: {
-    borderWidth: 2,
-    borderColor: COLORES.acento,
+  capsulaPosicion: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORES.blanco,
+    width: 20,
+    textAlign: 'center',
   },
-  posicionCirculo: {
-    width: 44,
-    height: 44,
+  capsulaAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
-    backgroundColor: COLORES.oscuro,
   },
-  posicionTexto: {
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: COLORES.blanco,
-  },
-  filaTextos: {
+  capsulaTextos: {
     flex: 1,
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  filaNombre: {
-    fontSize: 17,
-    lineHeight: 22,
+  capsulaNombre: {
+    fontSize: 15,
     fontWeight: '600',
-    color: COLORES.texto,
+    color: COLORES.blanco,
+    flex: 1,
   },
-  insigniaVos: {
-    alignSelf: 'flex-start',
-    borderRadius: 9999,
-    backgroundColor: COLORES.acento,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-  },
-  insigniaVosTexto: {
-    fontSize: 12,
-    lineHeight: 16,
+  capsulaVos: {
+    fontSize: 10,
     fontWeight: '700',
     color: COLORES.oscuro,
+    backgroundColor: COLORES.acento,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 9999,
   },
-  cantidadFila: {
+  capsulaPuntosContenedor: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 9999,
-    backgroundColor: COLORES.suave,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
   },
-  cantidadFilaTexto: {
-    fontSize: 17,
-    lineHeight: 22,
+  capsulaPuntos: {
+    fontSize: 15,
     fontWeight: '700',
-    color: COLORES.verde700,
+    color: COLORES.acento,
+  },
+  botonVerMasOscuro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    marginTop: 6,
+  },
+  textoBotonVerMasOscuro: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORES.acento,
   },
 
-  // --- Guía de rangos
-  guia: {
-    gap: 25,
+  cuerpoInferior: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  guiaContainer: {
+    gap: 14,
   },
   guiaEncabezado: {
-    gap: 10,
+    gap: 4,
   },
   tituloSeccion: {
-    fontSize: 30,
-    lineHeight: 40,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: -0.7,
+    letterSpacing: -0.5,
     color: COLORES.texto,
   },
   subtituloSeccion: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 13,
     color: COLORES.textoSuave,
   },
   tarjetaRango: {
     flexDirection: 'row',
-    gap: 16,
-    borderRadius: 24,
+    gap: 14,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 18,
+    padding: 14,
   },
   circuloRango: {
-    width: 64,
-    height: 64,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 32,
+    borderRadius: 24,
   },
   rangoTextos: {
     flex: 1,
-    gap: 8,
+    gap: 6,
   },
   rangoEncabezado: {
     flexDirection: 'row',
@@ -717,47 +653,33 @@ const estilos = StyleSheet.create({
     gap: 8,
   },
   rangoNombre: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   insigniaTuRango: {
     borderRadius: 9999,
     backgroundColor: COLORES.acento,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   insigniaTuRangoTexto: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 10,
     fontWeight: '700',
     color: COLORES.oscuro,
   },
   pildoraRango: {
     alignSelf: 'flex-start',
     borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   pildoraRangoTexto: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
     fontWeight: '700',
   },
   rangoDescripcion: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-  // --- Estilos Skeleton
-  skeletonBase: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  skeletonTextoNombrePodio: {
-    width: '70%',
-    height: 14,
-    borderRadius: 4,
-    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 18,
   },
 })

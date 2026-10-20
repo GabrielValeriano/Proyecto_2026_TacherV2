@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,61 +17,7 @@ import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useProductos } from 'src/hooks/useProductos'
 import { COLORES, SOMBRAS } from 'src/theme'
 import type { Producto } from 'src/types'
-
-/** Componente Skeleton individual para cada tarjeta de producto */
-function TarjetaProductoSkeleton() {
-  return (
-    <View style={estilos.tarjetaProducto}>
-      {/* Marcador de posición para la imagen */}
-      <View style={[estilos.imagenTarjetaSkeleton, estilos.skeletonBase]} />
-      
-      {/* Marcador de posición para los textos */}
-      <View style={estilos.productoTextos}>
-        <View style={[estilos.skeletonBase, estilos.skeletonTextoNombre]} />
-        <View style={[estilos.skeletonBase, estilos.skeletonTextoNombreCorto]} />
-        
-        <View style={estilos.precio}>
-          <View style={[estilos.skeletonBase, estilos.skeletonTextoPrecio]} />
-        </View>
-      </View>
-    </View>
-  )
-}
-
-/** Cuadrícula que renderiza una serie de tarjetas esqueleto en formato 2x2 */
-function CuadriculaSkeleton({ cantidad = 4 }: { cantidad?: number }) {
-  return (
-    <View style={estilos.cuadricula}>
-      {Array.from({ length: cantidad }).map((_, indice) => (
-        <TarjetaProductoSkeleton key={indice} />
-      ))}
-    </View>
-  )
-}
-
-/** Skeleton para los botones de filtrado horizontal por categorías */
-function FiltroCategoriasSkeleton() {
-  const anchos = [85, 90, 100] // Tamaños variados para simular palabras
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={estilos.filtros}
-    >
-      {anchos.map((ancho, index) => (
-        <View
-          key={index}
-          style={[
-            estilos.chip,
-            estilos.skeletonBase,
-            { width: ancho, height: 48 },
-          ]}
-        />
-      ))}
-    </ScrollView>
-  )
-}
+import { EsqueletoProductos } from 'src/components/EsqueletoProductos'
 
 function FilaPuntos({ puntos, onCanjesHistorial }: { puntos: number; onCanjesHistorial: () => void }) {
   return (
@@ -178,9 +125,8 @@ function CuadriculaProductos({
   error,
   onSeleccionar,
 }: CuadriculaProductosProps) {
-  if (cargando) {
-    return <CuadriculaSkeleton cantidad={3} />
-  }
+
+  if (cargando) return <EsqueletoProductos />
   if (error) return <MensajeError message={error} />
   if (productos.length === 0) {
     return (
@@ -229,18 +175,12 @@ export function PantallaCanjes() {
         <FilaPuntos puntos={puntos} onCanjesHistorial={() => abrirEnDesarrollo('Historial de Canjes')} />
 
         <Text style={estilos.subtitulo}>Productos disponibles</Text>
-
-        {/* Mientras carga mostramos el Skeleton de las categorías */}
-        {cargando ? (
-          <FiltroCategoriasSkeleton />
-        ) : (
-          categorias.length > 1 && (
-            <FiltroCategorias
-              categorias={categorias}
-              seleccionada={categoria}
-              onSeleccionar={setCategoria}
-            />
-          )
+        {categorias.length > 1 && (
+          <FiltroCategorias
+            categorias={categorias}
+            seleccionada={categoria}
+            onSeleccionar={setCategoria}
+          />
         )}
 
         <View style={estilos.seccionProductos}>
@@ -380,7 +320,6 @@ const estilos = StyleSheet.create({
   },
   productoTextos: {
     padding: 12,
-    gap: 6,
   },
   nombreProducto: {
     minHeight: 44,
@@ -412,35 +351,9 @@ const estilos = StyleSheet.create({
     lineHeight: 16,
     color: '#7A4A00',
   },
-
-  // --- Estilos Skeleton
-  skeletonBase: {
-    backgroundColor: COLORES.linea || '#E0E0E0',
-    opacity: 0.6,
+  cargando: {
+    marginVertical: 32,
   },
-  imagenTarjetaSkeleton: {
-    height: 120,
-    borderTopLeftRadius: 19,
-    borderTopRightRadius: 19,
-  },
-  skeletonTextoNombre: {
-    width: '90%',
-    height: 16,
-    borderRadius: 4,
-  },
-  skeletonTextoNombreCorto: {
-    width: '50%',
-    height: 16,
-    borderRadius: 4,
-    marginBottom: 6,
-  },
-  skeletonTextoPrecio: {
-    width: '60%',
-    height: 14,
-    borderRadius: 4,
-  },
-
-  // --- Estados
   vacio: {
     alignItems: 'center',
     paddingVertical: 32,

@@ -2,6 +2,11 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { cerrarSesionFirebase } from 'src/services/autenticacion'
 import { escucharUsuario } from 'src/services/usuarios'
 import type { AppContextValue, FlowData, Pantalla, Usuario, Producto } from 'src/types'
+import { auth } from 'src/firebase'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
+import { existePerfil } from 'src/services/usuarios'
+import { precargarDatos } from 'src/services/precarga'
+import { limpiarCache } from 'src/utils/cache'
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -13,11 +18,13 @@ export function useApp(): AppContextValue {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [pantallaActual, setPantallaActual] = useState<Pantalla>('welcome')
+  const [cargandoSesion, setCargandoSesion] = useState(true)
   const [seccionEnDesarrollo, setSeccionEnDesarrollo] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
   const [userDocId, setUserDocId] = useState<string | null>(null)
   const [userData, setUserData] = useState<Usuario | null>(null)
   const [flowData, setFlowData] = useState<FlowData>({})
+
 
   // Mantiene userData sincronizado en tiempo real con Firestore
   useEffect(() => {
@@ -29,6 +36,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Error escuchando cambios en tiempo real:', error),
     )
   }, [userDocId])
+
+  useEffect(() => {
+      if (userDocId) precargarDatos(userDocId)
+    }, [userDocId])
+
+  useEffect(() => {
+      let activo = true
+
+      const restaurarSesion = async () => {
+        try {
+          await auth.authStateReady()
+          const usuario = auth.currentUser
+          if (!usuario) return
+
+          let tienePerfil = true
+          try {
+            tienePerfil = await existePerfil(usuario.uid)
+          } catch (error) {
+            // Sin conexión: entramos igual, los datos cargan cuando vuelva internet
+            console.error('No se pudo verificar el perfil:', error)
+          }
+
+          if (activo && tienePerfil) {
+            setUserDocId(usuario.uid)
+            setPantallaActual('home')
+          }
+        } catch (error) {
+          console.error('Error al restaurar la sesión:', error)
+        } finally {
+          if (activo) setCargandoSesion(false)
+        }
+      }
+
+      restaurarSesion()
+      return () => {
+        activo = false
+      }
+    }, [])
+
+
 
   const abrirEnDesarrollo = (seccion: string) => {
     setSeccionEnDesarrollo(seccion)
@@ -43,6 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserDocId(null)
     setFlowData({})
     setPantallaActual('welcome')
+    limpiarCache()
   }
 
   const seleccionarProducto = (producto: Producto) => {
@@ -66,7 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         seleccionarProducto,
       }}
     >
-      {children}
+      {cargandoSesion ? <PantallaCarga/> : children}
     </AppContext.Provider>
   )
 }

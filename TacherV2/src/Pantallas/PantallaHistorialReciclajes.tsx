@@ -1,5 +1,5 @@
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { IconoBotella } from 'src/components/IconoBotella'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
@@ -8,36 +8,7 @@ import { useReciclajes } from 'src/hooks/useReciclajes'
 import type { Reciclaje } from 'src/services/reciclajes'
 import { COLORES, SOMBRAS } from 'src/theme'
 import { formatearFecha } from 'src/utils/fechas'
-
-/** Componente Skeleton individual que imita la estructura de FilaReciclaje */
-function FilaSkeleton({ conDivisor }: { conDivisor: boolean }) {
-  return (
-    <View style={[estilos.fila, conDivisor && estilos.filaConDivisor]}>
-      {/* Círculo / Contenedor del Ícono */}
-      <View style={[estilos.iconoTile, estilos.skeletonBase]} />
-
-      {/* Textos de residuo y fecha */}
-      <View style={estilos.filaTextos}>
-        <View style={[estilos.skeletonBase, estilos.skeletonTextoTitulo]} />
-        <View style={[estilos.skeletonBase, estilos.skeletonTextoSubtitulo]} />
-      </View>
-
-      {/* Píldora de puntos */}
-      <View style={[estilos.puntosPildora, estilos.skeletonBase, { opacity: 0.5 }]} />
-    </View>
-  )
-}
-
-/** Contenedor que renderiza varias filas de Skeleton */
-function ListaSkeleton({ cantidad = 10 }: { cantidad?: number }) {
-  return (
-    <View style={estilos.lista}>
-      {Array.from({ length: cantidad }).map((_, indice) => (
-        <FilaSkeleton key={indice} conDivisor={indice < cantidad - 1} />
-      ))}
-    </View>
-  )
-}
+import { EsqueletoReciclajes } from 'src/components/EsqueletoReciclajes'
 
 function FilaReciclaje({ reciclaje, conDivisor }: { reciclaje: Reciclaje; conDivisor: boolean }) {
   return (
@@ -68,11 +39,8 @@ interface ListaReciclajesProps {
 }
 
 function ListaReciclajes({ reciclajes, cargando, error }: ListaReciclajesProps) {
-  // Mostramos las filas esqueleto en lugar del ActivityIndicator
-  if (cargando) {
-    return <ListaSkeleton cantidad={10} />
-  }
-
+  if (cargando) return <EsqueletoReciclajes />
+  
   if (error) return <MensajeError message={error} />
 
   if (reciclajes.length === 0) {
@@ -177,7 +145,7 @@ const estilos = StyleSheet.create({
   },
   filaTextos: {
     flex: 1,
-    gap: 6,
+    gap: 2,
   },
   residuo: {
     fontSize: 17,
@@ -210,23 +178,10 @@ const estilos = StyleSheet.create({
     color: COLORES.textoSuave,
   },
 
-  // --- Skeleton Estilos
-  skeletonBase: {
-    backgroundColor: COLORES.linea || '#E0E0E0',
-    opacity: 0.6,
-  },
-  skeletonTextoTitulo: {
-    width: '60%',
-    height: 16,
-    borderRadius: 4,
-  },
-  skeletonTextoSubtitulo: {
-    width: '35%',
-    height: 12,
-    borderRadius: 4,
-  },
-
   // --- Estados
+  cargando: {
+    marginVertical: 32,
+  },
   vacio: {
     alignItems: 'center',
     gap: 12,

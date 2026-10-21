@@ -12,6 +12,7 @@ import { obtenerUidActual } from 'src/services/autenticacion'
 import { registrarPerfil } from 'src/services/usuarios'
 import { COLORES } from 'src/theme'
 import { mensajeDeError } from 'src/utils/errores'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaRegisterUsername() {
   const { navigate, flowData, setUserDocId } = useApp()
@@ -42,6 +43,8 @@ export function PantallaRegisterUsername() {
     }
   }
 
+  if (loading) return <PantallaCarga mensaje="Creando tu cuenta…" />
+  
   return (
     <View style={estilos.pantalla}>
       <ScreenHeader title="Nombre de usuario" onBack={() => navigate('confirm-scan')} />

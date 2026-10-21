@@ -13,6 +13,7 @@ export type Pantalla =
   | 'generar-qr'
   | 'historial-reciclajes'
   | 'ranking'
+  | 'perfil'
 
 export type ProveedorAuth = 'email' | 'google.com'
 

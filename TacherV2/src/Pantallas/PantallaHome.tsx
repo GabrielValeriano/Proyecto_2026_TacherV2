@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { BookOpen, ChevronRight, Gift, Recycle, LogOut } from 'lucide-react-native'
+import { BookOpen, ChevronRight, Gift, Recycle } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
@@ -73,7 +73,7 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
 }
 
 export function PantallaHome() {
-  const { userData, cerrarSesion, navigate, abrirEnDesarrollo } = useApp()
+  const { userData, navigate, abrirEnDesarrollo } = useApp()
   const handleTabPress = useNavegacionPestañas()
 
   const puntos = Number(userData?.Puntos) || 0
@@ -114,14 +114,6 @@ export function PantallaHome() {
 
         <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
 
-        {/* Cuando exista la pantalla de Perfil, este botón se muda para allá */}
-        <BotonPrimario
-          label="Cerrar sesión"
-          variante="peligro"
-          icon={<LogOut size={20} color={COLORES.blanco} />}
-          onPress={cerrarSesion}
-          style={estilos.botonCerrarSesion}
-        />
       </ScrollView>
 
       <BarraDeNavegacion activeTab="home" onTabPress={handleTabPress} />
@@ -277,9 +269,5 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     color: COLORES.textoSuave,
-  },
-  botonCerrarSesion: {
-    height: 56,
-    marginTop: 4,
   },
 })

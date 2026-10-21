@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 
-/** Segundos que faltan hasta `vence`, actualizados cada segundo. Llega a 0 y se queda ahí. */
+/**
+ * Segundos que faltan hasta `vence`. Se calcula en cada render con la hora actual
+ * (así nunca hay un instante con un valor viejo) y se vuelve a dibujar cada segundo.
+ * Llega a 0 y se queda ahí.
+ */
 export function useSegundosRestantes(vence: Date | null): number {
-  const calcular = () => (vence ? Math.max(0, Math.ceil((vence.getTime() - Date.now()) / 1000)) : 0)
-  const [segundos, setSegundos] = useState(calcular)
+  const [, setLatido] = useState(0)
 
   useEffect(() => {
-    setSegundos(calcular())
     if (!vence) return
 
-    const intervalo = setInterval(() => setSegundos(calcular()), 1000)
+    const intervalo = setInterval(() => setLatido((n) => n + 1), 1000)
     return () => clearInterval(intervalo)
   }, [vence])
 
-  return segundos
+  return vence ? Math.max(0, Math.ceil((vence.getTime() - Date.now()) / 1000)) : 0
 }

@@ -43,7 +43,7 @@ export function PantallaSeleccionarProducto() {
     <View style={estilos.pantalla}>
       <ScreenHeader title="Seleccionar producto" onBack={volverACanjes} />
 
-      <ScrollView contentContainerStyle={estilos.contenido}>
+      <ScrollView style={estilos.scroll} contentContainerStyle={estilos.contenido}>
         <ImagenProducto uri={imagen} style={estilos.imagen} tamañoIcono={64} />
 
         <View style={estilos.datos}>
@@ -89,7 +89,7 @@ const estilos = StyleSheet.create({
   contenido: {
     gap: 20,
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 8,
     paddingTop: 20,
   },
   imagen: {
@@ -97,7 +97,9 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORES.verde200,
   },
-
+  scroll: {
+      flexGrow: 0,
+  },
   // --- Datos del producto
   datos: {
     gap: 12,
@@ -142,12 +144,11 @@ const estilos = StyleSheet.create({
 
   // --- Botón fijo abajo
   pie: {
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: COLORES.verde100,
-    backgroundColor: COLORES.blanco,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+      gap: 8,
+      backgroundColor: COLORES.blanco,
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 16,
   },
   avisoPuntos: {
     textAlign: 'center',

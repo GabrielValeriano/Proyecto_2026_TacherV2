@@ -7,7 +7,7 @@ import { COLORES } from 'src/theme'
 
 /** Banner de las pantallas principales: perfil a la izquierda, nombre al centro e información a la derecha. */
 export function Encabezado() {
-  const { abrirEnDesarrollo } = useApp()
+  const { abrirEnDesarrollo, navigate } = useApp()
   const { top } = useSafeAreaInsets()
 
   return (
@@ -18,7 +18,7 @@ export function Encabezado() {
 
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => abrirEnDesarrollo('Perfil')}
+        onPress={() => navigate('perfil')}
         accessibilityLabel="Perfil"
         style={[estilos.botonCircular, estilos.botonLogo]}
       >

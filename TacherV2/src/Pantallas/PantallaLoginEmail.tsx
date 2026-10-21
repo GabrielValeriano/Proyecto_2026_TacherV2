@@ -16,6 +16,7 @@ import { iniciarSesionConEmail } from 'src/services/autenticacion'
 import { existePerfil } from 'src/services/usuarios'
 import { COLORES } from 'src/theme'
 import { mensajeDeError } from 'src/utils/errores'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaLoginEmail() {
   const { navigate, actualizarFlowData, flowData, setUserDocId } = useApp()
@@ -54,6 +55,10 @@ export function PantallaLoginEmail() {
     setError('')
     iniciarSesionConGoogle(setError)
   }
+
+  if (loading || loadingGoogle) {
+      return <PantallaCarga mensaje={loadingGoogle ? 'Conectando con Google…' : 'Iniciando sesión…'} />
+    }
 
   return (
     <View style={estilos.pantalla}>

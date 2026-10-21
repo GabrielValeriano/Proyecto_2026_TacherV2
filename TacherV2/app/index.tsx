@@ -18,7 +18,7 @@ import { PantallaSeleccionarProducto } from 'src/Pantallas/PantallaSeleccionarPr
 import { PantallaGenerarQr } from 'src/Pantallas/PantallaGenerarQr'
 import { PantallaHistorialReciclajes } from '@/src/Pantallas/PantallaHistorialReciclajes'
 import { PantallaRanking } from '@/src/Pantallas/PantallaRanking'
-
+import { PantallaPerfil } from '@/src/Pantallas/PantallaPerfil'
 configurarGoogleSignIn()
 
 const PANTALLAS: Record<Pantalla, ComponentType> = {
@@ -35,7 +35,8 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'seleccionar-producto': PantallaSeleccionarProducto,
   'generar-qr': PantallaGenerarQr,
   'historial-reciclajes': PantallaHistorialReciclajes,
-  'ranking': PantallaRanking
+  'ranking': PantallaRanking,
+  'perfil' : PantallaPerfil
 
 }
 

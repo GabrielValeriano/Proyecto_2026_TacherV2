@@ -53,7 +53,7 @@ export function PantallaEscaner({ onResultado, onCancelar }: Props) {
         style={StyleSheet.absoluteFill}
         facing="back"
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        onBarcodeScanned={validando ? undefined : handleEscaneo}
+        onBarcodeScanned={undefined}
       />
 
       <View style={estilos.marco}>

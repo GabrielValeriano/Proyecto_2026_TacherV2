@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { BookOpen, ChevronRight, Gift, Recycle } from 'lucide-react-native'
+import { BookOpen, ChevronRight, Gift, Recycle, LogOut } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
@@ -72,8 +72,17 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
   )
 }
 
+function BotonCerrarSesion({ onPress }: { onPress: () => void }) {
+ return (
+   <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={estilos.cerrarSesion}>
+     <LogOut size={22} color={COLORES.rojo600} />
+     <Text style={estilos.cerrarSesionTexto}>Cerrar sesión</Text>
+   </TouchableOpacity>
+ )
+}
+
 export function PantallaHome() {
-  const { userData, navigate, abrirEnDesarrollo } = useApp()
+  const { userData, navigate, abrirEnDesarrollo, cerrarSesion } = useApp()
   const handleTabPress = useNavegacionPestañas()
 
   const puntos = Number(userData?.Puntos) || 0
@@ -113,6 +122,8 @@ export function PantallaHome() {
         <CaminoDeRangos puntos={puntos} />
 
         <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
+        
+        <BotonCerrarSesion onPress={cerrarSesion}/>
 
       </ScrollView>
 
@@ -270,4 +281,22 @@ const estilos = StyleSheet.create({
     lineHeight: 18,
     color: COLORES.textoSuave,
   },
+  cerrarSesion: {
+   height: 56,
+   flexDirection: 'row',
+   alignItems: 'center',
+   justifyContent: 'center',
+   gap: 10,
+   borderRadius: 18,
+   borderWidth: 1,
+   borderColor: COLORES.rojo300,
+   backgroundColor: COLORES.rojo50,
+ },
+ cerrarSesionTexto: {
+   fontSize: 17,
+   lineHeight: 22,
+   fontWeight: '700',
+   color: COLORES.rojo600,
+ },
+
 })

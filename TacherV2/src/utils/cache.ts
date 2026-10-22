@@ -23,7 +23,7 @@ export const CLAVES = {
 }
 
 export function leerCache<T>(clave: string): T | undefined {
-  return cache.get(clave)?.datos as T | undefined
+  return undefined
 }
 
 export function estaFresco(clave: string): boolean {

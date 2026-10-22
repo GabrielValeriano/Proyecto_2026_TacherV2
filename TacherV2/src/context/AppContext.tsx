@@ -46,29 +46,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const restaurarSesion = async () => {
         try {
-          await auth.authStateReady()
-          const usuario = auth.currentUser
-          if (!usuario) return
+                await auth.authStateReady()
+                
+                // Forzamos a que cierre cualquier sesión guardada al abrir la app 
+                // para que siempre tenga que iniciar sesión de nuevo.
+                await cerrarSesionFirebase()
 
-          let tienePerfil = true
-          try {
-            tienePerfil = await existePerfil(usuario.uid)
-          } catch (error) {
-            // Sin conexión: entramos igual, los datos cargan cuando vuelva internet
-            console.error('No se pudo verificar el perfil:', error)
-          }
-
-          if (activo && tienePerfil) {
-            setUserDocId(usuario.uid)
-            setPantallaActual('home')
-          }
-        } catch (error) {
-          console.error('Error al restaurar la sesión:', error)
-        } finally {
-          if (activo) setCargandoSesion(false)
-        }
-      }
-
+              } catch (error) {
+                console.error('Error al limpiar la sesión:', error)
+              } finally {
+                if (activo) setCargandoSesion(false)
+              }
+            }
       restaurarSesion()
       return () => {
         activo = false
@@ -114,7 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         seleccionarProducto,
       }}
     >
-      {cargandoSesion ? <PantallaCarga/> : children}
+      {children}
     </AppContext.Provider>
   )
 }

@@ -4,13 +4,20 @@ import { BotonPrimario } from 'src/components/BotonPrimario'
 import { COLORES } from 'src/theme'
 import { useApp } from 'src/context/AppContext'
 
-export function PantallaEnDesarrollo() {
+interface Props {
+  titulo?: string
+}
+
+export function PantallaEnDesarrollo({ titulo }: Props) {
   const { navigate, seccionEnDesarrollo } = useApp()
+
+  // Si le pasamos la prop "titulo", la usamos. Si no, usa la del contexto.
+  const textoSeccion = titulo || seccionEnDesarrollo
 
   return (
     <View style={estilos.pantalla}>
       <Text style={estilos.etiqueta}>En Desarrollo</Text>
-      <Text style={estilos.seccion}>{seccionEnDesarrollo}</Text>
+      <Text style={estilos.seccion}>{textoSeccion}</Text>
       <Text style={estilos.descripcion}>Esta sección no está implementada todavía.</Text>
       <BotonPrimario
         label="Volver a Inicio"
@@ -21,6 +28,7 @@ export function PantallaEnDesarrollo() {
   )
 }
 
+// (Tus estilos se mantienen exactamente igual)
 const estilos = StyleSheet.create({
   pantalla: {
     flex: 1,

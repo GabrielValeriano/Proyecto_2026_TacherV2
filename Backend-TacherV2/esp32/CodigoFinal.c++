@@ -48,7 +48,7 @@ void abrirServos() {
 
 void cerrarServos() {
   Serial.println(">>> Posicionando servomotores en reposo (Cerrados)...");
-  servoDerecho.write(10);
+  servoDerecho.write(110);
   servoIzquierdo.write(110);
 }
 
@@ -56,7 +56,6 @@ void cerrarServos() {
 // Función para leer DNI (Lectura estándar)
 // -------------------------------------------------------------
 String leerDNI() {
-  // 🧹 Limpiar cualquier residuo o carácter fantasma anterior en los buffers
   while (Serial1.available() > 0) Serial1.read();
   while (Serial.available() > 0) Serial.read();
 
@@ -87,28 +86,63 @@ String leerDNI() {
 }
 
 // -------------------------------------------------------------
-// Función Especial para Residuo (Anti-acumulación y Control de Puerta)
+// Función Estricta Anti-Trampa
 // -------------------------------------------------------------
-String obtenerUltimoResiduoConControlDePuerta() {
-  // Limpiar buffer antes de empezar a escanear residuos también
-  while (Serial1.available() > 0) Serial1.read();
-  while (Serial.available() > 0) Serial.read();
-
-  String ultimoCodigo = "";
-  bool avisoPuertaMostrado = false;
+String obtenerResiduoEstrictoAntiTrampa() {
+  String codigoEscaneado = "";
 
   Serial.println("\n==================================================");
-  Serial.println("📦 ESCANEO DE RESIDUO");
-  Serial.println("ℹ️ Puede escanear varios códigos; se usará ÚNICAMENTE el último.");
-  Serial.println("🔒 Cierre la puerta del tacho para procesar el residuo.");
+  Serial.println("📦 PASO 2: CIERRE LA PUERTA PRIMERO (SIN ESCANEAR AFUERA)");
   Serial.println("==================================================");
 
   lcd.clear();
   lcd.setCursor(0, 0);
+  lcd.print("Cierre la puerta");
+  lcd.setCursor(0, 1);
+  lcd.print("para continuar");
+
+  // 1. ESPERAR A QUE LA PUERTA ESTÉ CERRADA (LOW = Cerrada)
+  // Durante este tiempo, CUALQUIER escaneo previo se ignora por completo.
+  while (true) {
+    bool puertaAbierta = (digitalRead(PIN_REED_SWITCH) == HIGH);
+    if (puertaAbierta) {
+      delay(50);
+      continue;
+    } else {
+      break; // Puerta cerrada confirmada
+    }
+  }
+
+  // 2. ¡MUY IMPORTANTE! En el preciso instante en que se cierra la puerta, 
+  // limpiamos todo lo que haya quedado en el búfer del lector para evitar lecturas falsas.
+  delay(150); // Pequeña pausa para estabilizar el sensor magnético
+  while (Serial1.available() > 0) Serial1.read();
+  while (Serial.available() > 0) Serial.read();
+
+  Serial.println("✅ Puerta cerrada. Búfer limpio. Escanee el residuo ahora...");
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Puerta Cerrada");
+  lcd.setCursor(0, 1);
   lcd.print("Escanee Residuo");
 
+  unsigned long tiempoInicio = millis();
+
+  // 3. ESCANEAR ÚNICAMENTE CON LA PUERTA CERRADA
   while (true) {
-    // 1. Capturar códigos del escáner o teclado sin acumular (el último pisa al anterior)
+    // Si abren la puerta mientras intentan escanear, se cancela
+    if (digitalRead(PIN_REED_SWITCH) == HIGH) {
+      Serial.println("❌ ¡Se abrió la puerta! Reciclaje cancelado.");
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Puerta Abierta!");
+      lcd.setCursor(0, 1);
+      lcd.print("Cancelado");
+      delay(2000);
+      return ""; 
+    }
+
+    // Leer escáner físico (Serial1)
     if (Serial1.available() > 0) {
       delay(80);
       String tempDato = "";
@@ -118,86 +152,51 @@ String obtenerUltimoResiduoConControlDePuerta() {
       }
       tempDato.trim();
       if (tempDato.length() > 0) {
-        ultimoCodigo = tempDato;
-        Serial.print("👉 Código detectado (Actualizado): ");
-        Serial.println(ultimoCodigo);
-        
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Ultimo Codigo:");
-        lcd.setCursor(0, 1);
-        lcd.print(ultimoCodigo.substring(0, 16));
+        codigoEscaneado = tempDato;
+        Serial.print("👉 Código de residuo capturado correctamente: ");
+        Serial.println(codigoEscaneado);
+        break; 
       }
     }
 
+    // Leer entrada manual por consola (Teclado)
     if (Serial.available() > 0) {
       String tempDato = Serial.readStringUntil('\n');
       tempDato.trim();
       if (tempDato.length() > 0) {
-        ultimoCodigo = tempDato;
-        Serial.print("👉 Código ingresado manual (Actualizado): ");
-        Serial.println(ultimoCodigo);
-
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Ultimo Codigo:");
-        lcd.setCursor(0, 1);
-        lcd.print(ultimoCodigo.substring(0, 16));
+        codigoEscaneado = tempDato;
+        Serial.print("👉 Código manual capturado: ");
+        Serial.println(codigoEscaneado);
+        break;
       }
     }
 
-    // 2. Verificar estado de la puerta (LOW = Cerrada, HIGH = Abierta)
-    bool puertaAbierta = (digitalRead(PIN_REED_SWITCH) == HIGH);
-
-    if (puertaAbierta) {
-      if (!avisoPuertaMostrado) {
-        Serial.println("⚠️ [PUERTA ABIERTA] Cierre la puerta para validar el residuo...");
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("PUERTA ABIERTA");
-        lcd.setCursor(0, 1);
-        lcd.print("Cierre la puerta");
-        avisoPuertaMostrado = true;
-      }
-    } else {
-      // Puerta CERRADA
-      if (avisoPuertaMostrado) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Escanee Residuo");
-        if (ultimoCodigo.length() > 0) {
-          lcd.setCursor(0, 1);
-          lcd.print(ultimoCodigo.substring(0, 16));
-        }
-      }
-      avisoPuertaMostrado = false;
-      
-      // Si ya tenemos un código escaneado y la puerta está cerrada, avanzamos
-      if (ultimoCodigo.length() > 0) {
-        Serial.println("✅ Puerta cerrada confirmada con código válido.");
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Puerta Cerrada");
-        lcd.setCursor(0, 1);
-        lcd.print("Validando...");
-        delay(200);
-        break; 
-      } else {
-        static unsigned long tUltimoAviso = 0;
-        if (millis() - tUltimoAviso > 3000) {
-          Serial.println("⏳ Puerta cerrada. Por favor, escanee el código del residuo...");
-          lcd.clear();
-          lcd.setCursor(0, 0);
-          lcd.print("Puerta Cerrada");
-          lcd.setCursor(0, 1);
-          lcd.print("Escanee residuo");
-          tUltimoAviso = millis();
-        }
-      }
+    // Timeout de seguridad de 30 segundos
+    if (millis() - tiempoInicio > 30000) {
+      Serial.println("⏱️ Tiempo de espera agotado.");
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Tiempo agotado");
+      delay(2000);
+      return "";
     }
+
     delay(50);
   }
-  return ultimoCodigo;
+
+  // 4. Verificación final: si abren la puerta justo después de leer el código
+  if (digitalRead(PIN_REED_SWITCH) == HIGH) {
+    Serial.println("❌ Se abrió la puerta inmediatamente después de escanear. Cancelado.");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Puerta Abierta!");
+    lcd.setCursor(0, 1);
+    lcd.print("Cancelado");
+    delay(2000);
+    return "";
+  }
+
+  return codigoEscaneado;
 }
 
 // -------------------------------------------------------------
@@ -241,7 +240,7 @@ void setup() {
   Serial.println("\n✅ Conectado a Wi-Fi con éxito.");
   Serial.print("📍 IP de la ESP32: ");
   Serial.println(WiFi.localIP());
-  Serial.println("🚀 Sistema TACHER V4 Listo y operativo.");
+  Serial.println("🚀 Sistema TACHER V4 Estricto Listo.");
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -274,7 +273,7 @@ void loop() {
   }
 
   // -------------------------------------------------------------
-  // PASO 1: Ingresar y verificar DNI (Objeto HTTP independiente)
+  // PASO 1: Ingresar y verificar DNI
   // -------------------------------------------------------------
   Serial.println("👉 Escanee su DNI (o ingréselo por teclado):");
   lcd.clear();
@@ -340,9 +339,16 @@ void loop() {
   httpDni.end();
 
   // -------------------------------------------------------------
-  // PASO 2: Escanear residuo con control de puerta y último código
+  // PASO 2: Control estricto anti-trampa (Cerrar puerta -> Limpiar buffer -> Escanear)
   // -------------------------------------------------------------
-  String codigoResiduo = obtenerUltimoResiduoConControlDePuerta();
+  String codigoResiduo = obtenerResiduoEstrictoAntiTrampa();
+  
+  if (codigoResiduo.length() == 0) {
+    Serial.println("🔄 Ciclo abortado por apertura de puerta. Reiniciando...\n");
+    delay(1000);
+    return; 
+  }
+
   Serial.print("📦 Código de Residuo a Verificar: ");
   Serial.println(codigoResiduo);
 
@@ -353,7 +359,7 @@ void loop() {
   lcd.print(codigoResiduo.substring(0, 16));
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("❌ Wi-Fi desconectado durante la espera de la puerta.");
+    Serial.println("❌ Wi-Fi desconectado.");
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("WiFi Perdido");
@@ -466,7 +472,6 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("Error Conexion 4");
   }
-  httpRegistro.end();
 
   Serial.println("\n🔄 Reiniciando sistema en 3 segundos...\n");
   delay(3000);

@@ -50,7 +50,7 @@ export async function registrarPerfil(
   nombre: string,
   datos: FlowData,
 ): Promise<ResultadoRegistro> {
-  const perfil: Omit<Usuario, 'id'> = {
+  const perfil: Omit<Usuario, 'id'> & { reciclajes: number } = {
     Nombre: nombre,
     Email: datos.email ?? '',
     DNI: datos.dni ?? 'N/A',
@@ -58,6 +58,7 @@ export async function registrarPerfil(
     FechaRegistro: new Date().toISOString(),
     Puntos: 0,
     Rango: RANGOS[0].name,
+    reciclajes: 0,
   }
   const clave = claveDeNombre(nombre)
   if (!claveEsValida(clave)) {
@@ -101,4 +102,60 @@ export function escucharUsuario(
 
 export function actualizarRango(uid: string, rango: string): Promise<void> {
   return updateDoc(perfilRef(uid), { Rango: rango })
+}
+
+export function actualizarDni(uid: string, dni: string): Promise<void> {
+  return updateDoc(perfilRef(uid), { DNI: dni })
+}
+
+export function actualizarNombre(uid: string, nombre: string): Promise<void> {
+  return updateDoc(perfilRef(uid), { Nombre: nombre })
+}
+
+export async function actualizarNombreUsuario(
+  uid: string,
+  nombreActual: string,
+  nombreNuevo: string,
+): Promise<{ ok: true } | { ok: false; mensaje: string }> {
+  const claveActual = claveDeNombre(nombreActual)
+  const claveNueva = claveDeNombre(nombreNuevo)
+
+  if (!claveEsValida(claveNueva)) {
+    return { ok: false, mensaje: 'Ese nombre de usuario no es válido. Probá con otro.' }
+  }
+
+  const nombreRefActual = doc(db, COLECCION_NOMBRES, claveActual)
+  const nombreRefNuevo = doc(db, COLECCION_NOMBRES, claveNueva)
+
+  try {
+    await runTransaction(db, async (transaccion) => {
+      const [snapActual, snapNuevo] = await Promise.all([
+        transaccion.get(nombreRefActual),
+        transaccion.get(nombreRefNuevo),
+      ])
+
+      if (snapNuevo.exists()) {
+        const uidGuardado = snapNuevo.data()?.Uid
+        if (uidGuardado && uidGuardado !== uid) throw new Error(NOMBRE_EN_USO)
+      }
+
+      if (claveActual !== claveNueva) {
+        if (snapActual.exists()) {
+          transaccion.delete(nombreRefActual)
+        }
+        transaccion.set(nombreRefNuevo, { Uid: uid })
+      } else if (!snapNuevo.exists()) {
+        transaccion.set(nombreRefNuevo, { Uid: uid })
+      }
+
+      transaccion.update(perfilRef(uid), { Nombre: nombreNuevo })
+    })
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof Error && error.message === NOMBRE_EN_USO) {
+      return { ok: false, mensaje: 'Este nombre de usuario ya está registrado. Elegí otro.' }
+    }
+    console.error('Error al actualizar el nombre de usuario:', error)
+    return { ok: false, mensaje: 'No se pudo actualizar el nombre. Intentá de nuevo.' }
+  }
 }

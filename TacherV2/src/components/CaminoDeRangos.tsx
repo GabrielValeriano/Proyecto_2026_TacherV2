@@ -1,17 +1,20 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { getRangoParaPuntos, RANGOS } from 'src/domain/rangos'
+import { getRangoParaReciclajes, RANGOS } from 'src/domain/rangos'
 import { COLORES } from 'src/theme'
 
 type EstadoPaso = 'completado' | 'actual' | 'pendiente'
 
-/** Muestra los rangos en fila (Brote, Planta, Árbol) y en cuál está el usuario. */
-export function CaminoDeRangos({ puntos }: { puntos: number }) {
-  const indiceActual = RANGOS.indexOf(getRangoParaPuntos(puntos))
+/** Muestra los rangos en fila (Brote, Hoja, Planta, Arbol, Bosque) y en cuál está el usuario. */
+export function CaminoDeRangos({ puntos, rangoActual }: { puntos: number; rangoActual: string }) {
+  const reciclajes = Math.max(0, Number(puntos) || 0)
+  const indiceActual = RANGOS.findIndex((rango) => rango.name === rangoActual) >= 0
+    ? RANGOS.findIndex((rango) => rango.name === rangoActual)
+    : RANGOS.indexOf(getRangoParaReciclajes(reciclajes))
 
   return (
     <View style={estilos.tarjeta}>
-      <Text style={estilos.titulo}>Tu camino</Text>
+      <Text style={estilos.titulo}>Tu rango actual es {rangoActual}</Text>
 
       <View style={estilos.fila}>
         {RANGOS.map((rango, indice) => {
@@ -62,9 +65,9 @@ const estilos = StyleSheet.create({
   },
   titulo: {
     marginBottom: 14,
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
+    fontSize: 20,
+    lineHeight: 30,
+    fontWeight: '800',
     color: COLORES.texto,
   },
   fila: {

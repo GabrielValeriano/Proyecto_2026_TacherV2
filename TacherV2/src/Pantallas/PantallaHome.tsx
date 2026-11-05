@@ -1,12 +1,12 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { BookOpen, ChevronRight, Gift, Recycle, LogOut } from 'lucide-react-native'
+import { BookOpen, ChevronRight, Gift, LogOut, Recycle } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
 import { Encabezado } from 'src/components/Encabezado'
 import { useApp } from 'src/context/AppContext'
-import { getResumenRango, type ResumenRango } from 'src/domain/rangos'
+import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useSincronizarRango } from 'src/hooks/useSincronizarRango'
 import { COLORES, SOMBRAS } from 'src/theme'
@@ -14,43 +14,74 @@ import { COLORES, SOMBRAS } from 'src/theme'
 function Saludo({ nombre }: { nombre: string }) {
   return (
     <View>
-      <Text style={estilos.saludo}>Hola de nuevo</Text>
-      <Text style={estilos.nombreUsuario}>@{nombre}</Text>
+        <Text style={estilos.nombreUsuario}>Bienvenido, {nombre}</Text>
     </View>
   )
 }
 
-interface TarjetaPuntosProps {
-  puntos: number
-  nombreRango: string
-  resumen: ResumenRango
-}
-
-function TarjetaPuntos({ puntos, nombreRango, resumen }: TarjetaPuntosProps) {
-  const { actual, proximo, progreso, puntosFaltantes } = resumen
-  const IconoRango = actual.icon
-
-  const mensajeProgreso = proximo
-    ? `Te faltan ${puntosFaltantes.toLocaleString('es-AR')} puntos para llegar a ${proximo.name}`
-    : '¡Alcanzaste el rango máximo!'
-
+function TarjetaPuntosYCanje({ puntos, onCanjear }: { puntos: number; onCanjear: () => void }) {
   return (
-    <View style={estilos.tarjeta}>
+    <View style={estilos.tarjetaPuntos}>
       <View style={estilos.circuloDecorativoGrande} />
       <View style={estilos.circuloDecorativoChico} />
 
-      <Text style={estilos.etiquetaPuntos}>Tus puntos</Text>
-      <Text style={estilos.puntos}>{puntos.toLocaleString('es-AR')}</Text>
-
-      <View style={estilos.chipRango}>
-        <IconoRango size={16} color={COLORES.blanco} />
-        <Text style={estilos.textoRango}>Rango {nombreRango}</Text>
+      <View style={estilos.contenidoPuntos}>
+        <Text style={estilos.etiquetaPuntosDisponibles}>Puntos Disponibles</Text>
+        <Text style={estilos.puntosGrandes}>{puntos.toLocaleString('es-AR')}</Text>
+        <Text style={estilos.subtextoPuntos}>Fijate si podes canjear productos del kiosco</Text>
       </View>
 
-      <View style={estilos.barraProgreso}>
-        <View style={[estilos.barraRelleno, { width: `${progreso}%` }]} />
+      <BotonPrimario
+        label="Canjear"
+        icon={<Gift size={20} color={COLORES.blanco} />}
+        onPress={onCanjear}
+        style={estilos.botonCanjear}
+      />
+    </View>
+  )
+}
+
+function TarjetaReciclajesProgreso({
+  reciclajes,
+  onVerReciclajes,
+}: {
+  reciclajes: number
+  onVerReciclajes: () => void
+}) {
+  const resumen = getResumenRangoPorReciclajes(reciclajes)
+  const { actual, proximo, progreso } = resumen
+  const IconoRango = actual.icon
+
+  const mensajeProgreso = proximo
+    ? `Llevas ${reciclajes.toLocaleString('es-AR')} de ${proximo.min.toLocaleString('es-AR')} reciclajes para Rango ${proximo.name}`
+    : '¡Alcanzaste el rango máximo!'
+
+  return (
+    <View style={estilos.tarjetaReciclajesProgreso}>
+      <View style={estilos.filaHeaderReciclajes}>
+        <View style={estilos.infoReciclajes}>
+          <Text style={estilos.etiquetaReciclajes}>Reciclajes Completados</Text>
+          <View style={estilos.filaValorReciclajes}>
+            <Recycle size={20} color={COLORES.principal} />
+            <Text style={estilos.valorReciclajes}>{reciclajes.toLocaleString('es-AR')}</Text>
+          </View>
+        </View>
+
+        <BotonPrimario
+          label="Movimientos"
+          variante="contorno"
+          icon={<Recycle size={18} color={COLORES.principal} />}
+          onPress={onVerReciclajes}
+          style={estilos.botonReciclajesChico}
+        />
       </View>
-      <Text style={estilos.textoProgreso}>{mensajeProgreso}</Text>
+
+      <View style={estilos.barraProgresoContenedor}>
+        <View style={estilos.barraProgresoFondo}>
+          <View style={[estilos.barraProgresoRelleno, { width: `${progreso}%` }]} />
+        </View>
+        <Text style={estilos.textoProgreso}>{mensajeProgreso}</Text>
+      </View>
     </View>
   )
 }
@@ -73,12 +104,12 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
 }
 
 function BotonCerrarSesion({ onPress }: { onPress: () => void }) {
- return (
-   <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={estilos.cerrarSesion}>
-     <LogOut size={22} color={COLORES.rojo600} />
-     <Text style={estilos.cerrarSesionTexto}>Cerrar sesión</Text>
-   </TouchableOpacity>
- )
+  return (
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={estilos.cerrarSesion}>
+      <LogOut size={22} color={COLORES.rojo600} />
+      <Text style={estilos.cerrarSesionTexto}>Cerrar sesión</Text>
+    </TouchableOpacity>
+  )
 }
 
 export function PantallaHome() {
@@ -86,7 +117,10 @@ export function PantallaHome() {
   const handleTabPress = useNavegacionPestañas()
 
   const puntos = Number(userData?.Puntos) || 0
-  const resumenRango = getResumenRango(puntos)
+  const reciclajesBruto = (userData as any)?.reciclajes ?? (userData as any)?.Reciclajes
+  const reciclajes = reciclajesBruto === undefined || reciclajesBruto === null ? 0 : Math.max(0, Number(reciclajesBruto) || 0)
+  const resumenRango = getResumenRangoPorReciclajes(reciclajes)
+  const rangoActual = userData?.Rango || resumenRango.actual.name
 
   useSincronizarRango(userData, resumenRango.actual.name)
 
@@ -94,36 +128,15 @@ export function PantallaHome() {
     <View style={estilos.pantalla}>
       <Encabezado />
 
-      <ScrollView contentContainerStyle={estilos.contenido}>
+      <ScrollView contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false}>
         <Saludo nombre={userData?.Nombre || 'Usuario'} />
 
-        <TarjetaPuntos
-          puntos={puntos}
-          nombreRango={userData?.Rango || resumenRango.actual.name}
-          resumen={resumenRango}
-        />
+        <TarjetaPuntosYCanje puntos={puntos} onCanjear={() => navigate('canjes')} />
 
-        <View style={estilos.acciones}>
-          <BotonPrimario
-            label="Canjear"
-            icon={<Gift size={20} color={COLORES.blanco} />}
-            onPress={() => navigate('canjes')}
-            style={estilos.botonAccion}
-          />
-          <BotonPrimario
-            label="Reciclajes"
-            variante="contorno"
-            icon={<Recycle size={20} color={COLORES.principal} />}
-            onPress={() => navigate('historial-reciclajes')}
-            style={estilos.botonAccion}
-          />
-        </View>
+        <TarjetaReciclajesProgreso reciclajes={reciclajes} onVerReciclajes={() => navigate('historial-reciclajes')} />
 
-        <CaminoDeRangos puntos={puntos} />
 
         <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
-        
-        <BotonCerrarSesion onPress={cerrarSesion}/>
 
       </ScrollView>
 
@@ -144,109 +157,167 @@ const estilos = StyleSheet.create({
     paddingTop: 20,
   },
 
-  // --- Saludo
+  // Saludo
   saludo: {
-    fontSize: 15,
+    fontSize: 20,
     lineHeight: 20,
     color: COLORES.textoSuave,
   },
   nombreUsuario: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 25,
+    lineHeight: 30,
     fontWeight: '700',
     letterSpacing: -0.7,
     color: COLORES.texto,
   },
 
-  // --- Tarjeta de puntos
-  tarjeta: {
+  // Tarjeta Puntos
+  tarjetaPuntos: {
     overflow: 'hidden',
-    borderRadius: 24,
+    borderRadius: 26,
     backgroundColor: COLORES.oscuro,
-    padding: 22,
+    padding: 24,
+    gap: 18,
     ...SOMBRAS.media,
   },
   circuloDecorativoGrande: {
     position: 'absolute',
-    right: -40,
-    top: -40,
-    width: 170,
-    height: 170,
-    borderRadius: 85,
+    right: -50,
+    top: -60,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
     backgroundColor: COLORES.principal,
-    opacity: 0.4,
+    opacity: 0.45,
   },
   circuloDecorativoChico: {
     position: 'absolute',
-    right: 28,
-    bottom: -56,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    right: 20,
+    bottom: -70,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     backgroundColor: COLORES.principal,
     opacity: 0.25,
   },
-  etiquetaPuntos: {
+  contenidoPuntos: {
+    gap: 6,
+  },
+  etiquetaPuntosDisponibles: {
     fontSize: 14,
     lineHeight: 18,
     color: COLORES.sobreOscuro,
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
   },
-  puntos: {
-    marginTop: 2,
-    fontSize: 52,
-    lineHeight: 58,
-    fontWeight: '700',
-    letterSpacing: -1.3,
+  puntosGrandes: {
+    fontSize: 64,
+    lineHeight: 70,
+    fontWeight: '800',
+    letterSpacing: -2,
     color: COLORES.blanco,
   },
-  chipRango: {
-    alignSelf: 'flex-start',
+  subtextoPuntos: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: COLORES.sobreOscuro,
+  },
+  botonCanjear: {
+    width: '100%',
+    height: 56,
+    borderRadius: 18,
+  },
+
+  // Tarjeta Reciclajes con barra
+  tarjetaReciclajesProgreso: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORES.linea,
+    backgroundColor: COLORES.blanco,
+    padding: 18,
+    gap: 16,
+    ...SOMBRAS.chica,
+  },
+  filaHeaderReciclajes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  infoReciclajes: {
+    gap: 4,
+  },
+  etiquetaReciclajes: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
+  },
+  filaValorReciclajes: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 12,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
   },
-  textoRango: {
+  valorReciclajes: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
+    color: COLORES.texto,
+  },
+  rangoYCajon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    backgroundColor: COLORES.suave,
+  },
+  nombreRangoChico: {
     fontSize: 14,
     lineHeight: 18,
-    color: COLORES.blanco,
+    fontWeight: '600',
+    color: COLORES.principalOscuro,
   },
-  barraProgreso: {
+  botonReciclajesChico: {
+    width: 'auto',
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 14,
+  },
+  barraProgresoContenedor: {
+    gap: 8,
+  },
+  barraProgresoFondo: {
     width: '100%',
     height: 10,
-    marginTop: 18,
-    overflow: 'hidden',
     borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: COLORES.suave,
+    overflow: 'hidden',
   },
-  barraRelleno: {
+  barraProgresoRelleno: {
     height: '100%',
     borderRadius: 9999,
-    backgroundColor: COLORES.acento,
+    backgroundColor: COLORES.principal,
   },
   textoProgreso: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 18,
-    color: COLORES.sobreOscuro,
+    color: COLORES.textoSuave,
   },
 
-  // --- Botones Canjear / Historial
-  acciones: {
-    flexDirection: 'row',
+  // Sección Tu camino
+  seccionCamino: {
     gap: 12,
   },
-  botonAccion: {
-    flex: 1,
-    width: 'auto',
-    height: 56,
+  tituloCamino: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '700',
+    color: COLORES.texto,
+    paddingHorizontal: 4,
   },
 
-  // --- Acceso a Instrucciones
+  // Acceso
   acceso: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -282,21 +353,20 @@ const estilos = StyleSheet.create({
     color: COLORES.textoSuave,
   },
   cerrarSesion: {
-   height: 56,
-   flexDirection: 'row',
-   alignItems: 'center',
-   justifyContent: 'center',
-   gap: 10,
-   borderRadius: 18,
-   borderWidth: 1,
-   borderColor: COLORES.rojo300,
-   backgroundColor: COLORES.rojo50,
- },
- cerrarSesionTexto: {
-   fontSize: 17,
-   lineHeight: 22,
-   fontWeight: '700',
-   color: COLORES.rojo600,
- },
-
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORES.rojo300,
+    backgroundColor: COLORES.rojo50,
+  },
+  cerrarSesionTexto: {
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '700',
+    color: COLORES.rojo600,
+  },
 })

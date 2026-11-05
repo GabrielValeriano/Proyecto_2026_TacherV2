@@ -56,6 +56,10 @@ export function PantallaLoginEmail() {
     iniciarSesionConGoogle(setError)
   }
 
+  if (loading || loadingGoogle) {
+      return <PantallaCarga mensaje={loadingGoogle ? 'Conectando con Google…' : 'Iniciando sesión…'} />
+    }
+
   return (
     <View style={estilos.pantalla}>
       <ScreenHeader title="Iniciar Sesión" onBack={() => navigate('welcome')} />

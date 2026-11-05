@@ -21,7 +21,7 @@ import { formatearTiempo } from 'src/utils/fechas'
 const SEGUNDOS_URGENTE = 60
 
 export function PantallaGenerarQr() {
-  const { productoSeleccionado, userData, navigate } = useApp()
+  const { productoSeleccionado, userData, navigate, seleccionarProducto } = useApp()
   const { width } = useWindowDimensions()
   const { canje, cargando, error, finalizado, cancelar, regenerar } = useCanjeQr(
     productoSeleccionado,
@@ -39,7 +39,8 @@ export function PantallaGenerarQr() {
 
   const handleCancelar = async () => {
     await cancelar()
-    navigate('seleccionar-producto')
+    seleccionarProducto(null)
+    navigate('canjes')
   }
 
   if (!productoSeleccionado) {

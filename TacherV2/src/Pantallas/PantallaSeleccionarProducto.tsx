@@ -1,9 +1,8 @@
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { QrCode } from 'lucide-react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { QrCode, X, Coins } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { ImagenProducto } from 'src/components/ImagenProducto'
-import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
 import { COLORES } from 'src/theme'
 
@@ -14,15 +13,23 @@ export function PantallaSeleccionarProducto() {
 
   if (!productoSeleccionado) {
     return (
-      <View style={estilos.pantalla}>
-        <ScreenHeader title="Seleccionar producto" onBack={volverACanjes} />
-        <View style={estilos.sinProducto}>
-          <Text style={estilos.sinProductoTexto}>No hay ningún producto seleccionado.</Text>
-          <BotonPrimario
-            label="Volver a canjes"
-            onPress={volverACanjes}
-            style={estilos.botonVolver}
-          />
+      <View style={estilos.contenedorOverlay}>
+        <View style={estilos.modalCard}>
+          <View style={estilos.cabeceraModal}>
+            <TouchableOpacity onPress={volverACanjes} style={estilos.botonCerrar}>
+              <X size={24} color={COLORES.gris900} />
+            </TouchableOpacity>
+            <Text style={estilos.tituloCabecera}>Detalle de canje</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <View style={estilos.sinProducto}>
+            <Text style={estilos.sinProductoTexto}>No hay ningún producto seleccionado.</Text>
+            <BotonPrimario
+              label="Volver a canjes"
+              onPress={volverACanjes}
+              style={estilos.botonVolver}
+            />
+          </View>
         </View>
       </View>
     )
@@ -40,79 +47,137 @@ export function PantallaSeleccionarProducto() {
   }
 
   return (
-    <View style={estilos.pantalla}>
-      <ScreenHeader title="Seleccionar producto" onBack={volverACanjes} />
+    <View style={estilos.contenedorOverlay}>
+      {/* Tarjeta modal flotante superpuesta */}
+      <View style={estilos.modalCard}>
+        
+        {/* Cabecera con botón X a la izquierda y título centrado */}
+        <View style={estilos.cabeceraModal}>
+          <TouchableOpacity onPress={volverACanjes} style={estilos.botonCerrar} activeOpacity={0.7}>
+            <X size={24} color={COLORES.gris900} />
+          </TouchableOpacity>
+          <Text style={estilos.tituloCabecera}>Detalle de canje</Text>
+          <View style={{ width: 24 }} /> {/* Espaciador simétrico */}
+        </View>
 
-      <ScrollView style={estilos.scroll} contentContainerStyle={estilos.contenido}>
-        <ImagenProducto uri={imagen} style={estilos.imagen} tamañoIcono={64} />
+        {/* Contenido principal scrolleable */}
+        <ScrollView contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false}>
+          <ImagenProducto uri={imagen} style={estilos.imagen} tamañoIcono={64} />
 
-        <View style={estilos.datos}>
-          <Text style={estilos.nombre}>{nombre}</Text>
-          <View style={estilos.chipPuntos}>
-            <Text style={estilos.textoPuntos}>{puntos.toLocaleString('es-AR')} puntos</Text>
+          <View style={estilos.datos}>
+            <View style={estilos.chipPuntos}>
+              <Coins size={16} color={COLORES.verde700} />
+              <Text style={estilos.textoPuntos}>{puntos.toLocaleString('es-AR')} Puntos</Text>
+            </View>
+            <Text style={estilos.nombre}>{nombre}</Text>
           </View>
+
+          <View style={estilos.seccionDescripcion}>
+            <Text style={estilos.descripcion}>
+              {descripcion || 'Este producto todavía no tiene descripción.'}
+            </Text>
+          </View>
+
+          {/* Barra de progreso / aviso de puntos faltantes */}
+          {!alcanzanLosPuntos && (
+            <View style={estilos.seccionFaltantes}>
+              <View style={estilos.barraProgresoFondo}>
+                <View 
+                  style={[
+                    estilos.barraProgresoRellena, 
+                    { width: `${Math.min(100, (puntosDelUsuario / puntos) * 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={estilos.avisoPuntos}>
+                Te {puntosFaltantes === 1 ? 'falta' : 'faltan'} {puntosFaltantes.toLocaleString('es-AR')}{' '}
+                {puntosFaltantes === 1 ? 'punto' : 'puntos'} para canjear este producto.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Pie con los 2 botones solicitados */}
+        <View style={estilos.pie}>
+          <BotonPrimario
+            label="Generar QR"
+            icon={
+              <QrCode size={20} color={alcanzanLosPuntos ? COLORES.blanco : COLORES.gris400} />
+            }
+            disabled={!alcanzanLosPuntos}
+            onPress={handleGenerarQr}
+          />
+          <TouchableOpacity
+            style={estilos.botonSecundario}
+            activeOpacity={0.8}
+            onPress={volverACanjes}
+          >
+            <Text style={estilos.textoBotonSecundario}>Ver los demás productos</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={estilos.seccionDescripcion}>
-          <Text style={estilos.subtitulo}>Descripción</Text>
-          <Text style={estilos.descripcion}>
-            {descripcion || 'Este producto todavía no tiene descripción.'}
-          </Text>
-        </View>
-      </ScrollView>
-
-      <View style={estilos.pie}>
-        {!alcanzanLosPuntos && (
-          <Text style={estilos.avisoPuntos}>
-            Te {puntosFaltantes === 1 ? 'falta' : 'faltan'} {puntosFaltantes.toLocaleString('es-AR')}{' '}
-            {puntosFaltantes === 1 ? 'punto' : 'puntos'} para canjear este producto.
-          </Text>
-        )}
-        <BotonPrimario
-          label="Generar QR"
-          icon={
-            <QrCode size={20} color={alcanzanLosPuntos ? COLORES.blanco : COLORES.gris400} />
-          }
-          disabled={!alcanzanLosPuntos}
-          onPress={handleGenerarQr}
-        />
       </View>
     </View>
   )
 }
 
 const estilos = StyleSheet.create({
-  pantalla: {
+  contenedorOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro translúcido superpuesto
+    justifyContent: 'flex-end', // Ancla el modal abajo estilo Bottom Sheet
+  },
+  modalCard: {
+    height: '92%', // Ocupa casi toda la altura de la pantalla
     backgroundColor: COLORES.blanco,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+    flexDirection: 'column',
+  },
+  cabeceraModal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORES.verde100 || '#E5E7EB',
+  },
+  botonCerrar: {
+    padding: 4,
+  },
+  tituloCabecera: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORES.gris900,
   },
   contenido: {
     gap: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
   imagen: {
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORES.verde200,
+    height: 180,
   },
-  scroll: {
-      flexGrow: 0,
-  },
-  // --- Datos del producto
   datos: {
-    gap: 12,
+    gap: 10,
+    alignItems: 'center',
   },
   nombre: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: '700',
-    letterSpacing: -0.7,
+    textAlign: 'center',
     color: COLORES.gris900,
   },
   chipPuntos: {
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: 9999,
     borderWidth: 1,
     borderColor: COLORES.verde200,
@@ -121,44 +186,62 @@ const estilos = StyleSheet.create({
     paddingVertical: 6,
   },
   textoPuntos: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORES.verde700,
   },
   seccionDescripcion: {
-    gap: 8,
-  },
-  subtitulo: {
-    fontSize: 18,
-    lineHeight: 28,
-    fontWeight: '700',
-    letterSpacing: -0.45,
-    color: COLORES.gris900,
+    alignItems: 'center',
   },
   descripcion: {
     fontSize: 14,
-    lineHeight: 22.75,
+    lineHeight: 22,
+    textAlign: 'center',
     color: COLORES.gris600,
   },
-
-  // --- Botón fijo abajo
-  pie: {
-      gap: 8,
-      backgroundColor: COLORES.blanco,
-      paddingHorizontal: 20,
-      paddingTop: 8,
-      paddingBottom: 16,
+  seccionFaltantes: {
+    gap: 8,
+    marginTop: 4,
+  },
+  barraProgresoFondo: {
+    height: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  barraProgresoRellena: {
+    height: '100%',
+    backgroundColor: COLORES.principal,
+    borderRadius: 3,
   },
   avisoPuntos: {
     textAlign: 'center',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORES.gris500,
   },
-
-  // --- Sin producto seleccionado
+  pie: {
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORES.verde100 || '#E5E7EB',
+    backgroundColor: COLORES.blanco,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  botonSecundario: {
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: COLORES.principal,
+    backgroundColor: COLORES.blanco,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textoBotonSecundario: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORES.principal,
+  },
   sinProducto: {
     flex: 1,
     alignItems: 'center',
@@ -169,7 +252,6 @@ const estilos = StyleSheet.create({
   sinProductoTexto: {
     textAlign: 'center',
     fontSize: 14,
-    lineHeight: 20,
     color: COLORES.gris500,
   },
   botonVolver: {

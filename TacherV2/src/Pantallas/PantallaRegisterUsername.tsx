@@ -42,7 +42,9 @@ export function PantallaRegisterUsername() {
       setLoading(false)
     }
   }
-  
+
+  if (loading) return <PantallaCarga mensaje="Creando tu cuenta…" />
+
   return (
     <View style={estilos.pantalla}>
       <ScreenHeader title="Nombre de usuario" onBack={() => navigate('confirm-scan')} />

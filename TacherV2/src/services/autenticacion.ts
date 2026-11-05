@@ -1,8 +1,12 @@
 import {
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
+  reauthenticateWithCredential,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
+  updateProfile,
   type UserCredential,
 } from 'firebase/auth'
 import { auth } from 'src/firebase'
@@ -95,4 +99,43 @@ export async function comprobarEmailVerificado(): Promise<boolean> {
 
   await usuario.getIdToken(true)
   return true
+}
+
+export async function cambiarContrasenaActual(
+  contrasenaActual: string,
+  contrasenaNueva: string,
+): Promise<{ ok: true } | { ok: false; mensaje: string }> {
+  const usuario = auth.currentUser
+  if (!usuario || !usuario.email) {
+    return { ok: false, mensaje: 'No hay una sesión activa para cambiar la contraseña.' }
+  }
+
+  try {
+    const credencial = EmailAuthProvider.credential(usuario.email, contrasenaActual)
+    await reauthenticateWithCredential(usuario, credencial)
+    await updatePassword(usuario, contrasenaNueva)
+    return { ok: true }
+  } catch (error) {
+    const codigo = (error as { code?: string }).code ?? ''
+    if (codigo === 'auth/wrong-password' || codigo === 'auth/invalid-credential') {
+      return { ok: false, mensaje: 'La contraseña actual no es correcta.' }
+    }
+    if (codigo === 'auth/weak-password') {
+      return { ok: false, mensaje: 'La nueva contraseña es demasiado débil.' }
+    }
+    if (codigo === 'auth/requires-recent-login') {
+      return { ok: false, mensaje: 'Es necesario volver a iniciar sesión para cambiar la contraseña.' }
+    }
+    if (codigo === 'auth/too-many-requests') {
+      return { ok: false, mensaje: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' }
+    }
+    console.error('Error al cambiar la contraseña:', error)
+    return { ok: false, mensaje: 'No se pudo cambiar la contraseña. Intentá de nuevo.' }
+  }
+}
+
+export async function actualizarNombreAuth(nombre: string): Promise<void> {
+  const usuario = auth.currentUser
+  if (!usuario) throw new Error('No hay una sesión activa.')
+  await updateProfile(usuario, { displayName: nombre })
 }

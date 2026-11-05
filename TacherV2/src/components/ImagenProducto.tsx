@@ -35,7 +35,7 @@ export function ImagenProducto({ uri, style, tamañoIcono = 32 }: Props) {
 const estilos = StyleSheet.create({
   base: {
     width: '100%',
-    aspectRatio: 1,
+    height: '100%',
     backgroundColor: COLORES.verde100,
   },
   vacia: {

@@ -1,67 +1,76 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  cancelarCanje,
+  escucharValidacionCanje,
+  obtenerOCrearCanjePendiente,
+} from 'src/services/canjes'
 import type { CanjePendiente, Producto, Usuario } from 'src/types'
-
-// Variable en memoria global para que el QR no se pierda al navegar hacia atrás
-let canjeMockGlobal: (CanjePendiente & { producto: string; puntosCanjeados: number; codigo: string; fecha: Date }) | null = null
 
 export function useCanjeQr(producto: Producto | null, usuario: Usuario | null) {
   const [canje, setCanje] = useState<CanjePendiente | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [finalizado, setFinalizado] = useState(false)
+  const [intento, setIntento] = useState(0)
+
+  // Solo los ids como dependencia: si los puntos del usuario cambian
+  // (por ejemplo, tras el canje) no se debe generar otro QR.
+  const productoId = producto?.id
+  const uid = usuario?.id
 
   useEffect(() => {
     if (!producto || !usuario) return
 
-    const ahora = Date.now()
-
-    // 1. Si ya existe un QR guardado y todavía no pasaron los 5 minutos, LO REUTILIZAMOS
-    if (canjeMockGlobal && canjeMockGlobal.vence.getTime() > ahora) {
-      setCanje(canjeMockGlobal)
+    if ((Number(usuario.Puntos) || 0) < producto.puntos) {
+      setCanje(null)
       setCargando(false)
+      setError('No te alcanzan los puntos para canjear este producto.')
       return
     }
 
-    // 2. Si no hay QR o ya venció, creamos uno nuevo con 5 minutos exactos de duración
-    const cincoMinutosMs = 5 * 60 * 1000
-    const nuevoCanje = {
-      id: 'prototipo-qr-' + Math.floor(Math.random() * 10000),
-      producto: producto.nombre,
-      puntosCanjeados: producto.puntos,
-      codigo: 'PROTOTIPO',
-      fecha: new Date(),
-      vence: new Date(ahora + cincoMinutosMs),
+    let cancelado = false
+    setCargando(true)
+    setError('')
+    setCanje(null)
+
+    obtenerOCrearCanjePendiente({ uid: usuario.id, nombreUsuario: usuario.Nombre, producto })
+      .then((resultado) => {
+        if (!cancelado) setCanje(resultado)
+      })
+      .catch((err) => {
+        console.error('Error al generar el QR:', err)
+        if (!cancelado) setError('No se pudo generar el QR. Intentalo de nuevo.')
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false)
+      })
+
+    return () => {
+      cancelado = true
     }
+  }, [productoId, uid, intento])
 
-    canjeMockGlobal = nuevoCanje
-    setCanje(nuevoCanje)
-    setCargando(false)
-  }, [producto, usuario])
+  useEffect(() => {
+    if (!canje) return
 
-  // Al cancelar, HACEMOS QUE NO BORRE el QR global. 
-  // Así, si el usuario vuelve a entrar, mantiene el mismo código y el tiempo que le queda.
-  const cancelar = async () => {
-    // No destruimos canjeMockGlobal para que persista
-  }
+    return escucharValidacionCanje(
+      canje.id,
+      (validacion) => {
+        if (validacion === 'finalizado') setFinalizado(true)
+      },
+      (err) => console.error('Error escuchando el canje:', err),
+    )
+  }, [canje?.id])
 
-  // Si el usuario presiona "Generar QR nuevo" (porque expiró), ahí sí lo limpiamos para forzar uno nuevo
-  const regenerar = () => {
-    canjeMockGlobal = null
-    if (producto && usuario) {
-      const ahora = Date.now()
-      const cincoMinutosMs = 5 * 60 * 1000
-      const nuevoCanje = {
-        id: 'prototipo-qr-' + Math.floor(Math.random() * 10000),
-        producto: producto.nombre,
-        puntosCanjeados: producto.puntos,
-        codigo: 'PROTOTIPO',
-        fecha: new Date(),
-        vence: new Date(ahora + cincoMinutosMs),
-      }
-      canjeMockGlobal = nuevoCanje
-      setCanje(nuevoCanje)
+  const cancelar = useCallback(async () => {
+    if (!canje) return
+    try {
+      await cancelarCanje(canje.id)
+    } catch (err) {
+      // Si falla, el QR igual vence solo a los pocos minutos
+      console.error('Error al cancelar el canje:', err)
     }
-  }
+  }, [canje])
 
   return {
     canje,
@@ -69,6 +78,7 @@ export function useCanjeQr(producto: Producto | null, usuario: Usuario | null) {
     error,
     finalizado,
     cancelar,
-    regenerar,
+    regenerar: () => setIntento((n) => n + 1),
   }
 }
+

@@ -79,13 +79,14 @@ app.post('/api/verificar-dni', async (req, res) => {
 // =========================================================================
 app.post('/api/verificar-residuo', async (req, res) => {
   try {
-    const { codigo_residuo } = req.body;
+    // Aceptamos tanto codigo_residuo como codigo_producto para evitar fallos de compatibilidad
+    const codigo_residuo = req.body.codigo_residuo || req.body.codigo_producto;
 
     if (!codigo_residuo) {
       return res.status(400).json({
         exito: false,
         codigo_error: 1001,
-        mensaje: 'Falta el parámetro: codigo_producto'
+        mensaje: 'Falta el parámetro: codigo_residuo'
       });
     }
 

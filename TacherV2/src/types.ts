@@ -14,6 +14,10 @@ export type Pantalla =
   | 'historial-reciclajes'
   | 'ranking'
   | 'perfil'
+  | 'datos-condiciones'
+  | 'cambiar-dni'
+  | 'ajustes'
+  | 'historial-canjes'
 
 export type ProveedorAuth = 'email' | 'google.com'
 
@@ -47,7 +51,10 @@ export interface AppContextValue {
   setUserDocId: (id: string | null) => void
   cerrarSesion: () => void
   productoSeleccionado: Producto | null
-  seleccionarProducto: (producto: Producto) => void
+  seleccionarProducto: (producto: Producto | null) => void
+  mensajeExito?: string
+  mostrarExito?: (mensaje: string, duracionMs?: number) => void
+  ocultarExito?: () => void
 }
 
 export interface Canje {

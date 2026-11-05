@@ -19,6 +19,10 @@ import { PantallaGenerarQr } from 'src/Pantallas/PantallaGenerarQr'
 import { PantallaHistorialReciclajes } from '@/src/Pantallas/PantallaHistorialReciclajes'
 import { PantallaRanking } from '@/src/Pantallas/PantallaRanking'
 import { PantallaPerfil } from '@/src/Pantallas/PantallaPerfil'
+import { PantallaDatosYCondiciones } from '@/src/Pantallas/PantallaDatosYCondiciones'
+import { PantallaActualizarDNI } from '@/src/Pantallas/PantallaActualizarDNI'
+import { PantallaAjustes } from '@/src/Pantallas/PantallaAjustes'
+import { PantallaHistorialCanjes } from '@/src/Pantallas/PantallaHistorialCanjes'
 configurarGoogleSignIn()
 
 const PANTALLAS: Record<Pantalla, ComponentType> = {
@@ -36,8 +40,11 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'generar-qr': PantallaGenerarQr,
   'historial-reciclajes': PantallaHistorialReciclajes,
   'ranking': PantallaRanking,
-  'perfil' : PantallaPerfil
-
+  'perfil' : PantallaPerfil,
+  'datos-condiciones': PantallaDatosYCondiciones,
+  'cambiar-dni': PantallaActualizarDNI,
+  'ajustes': PantallaAjustes,
+  'historial-canjes': PantallaHistorialCanjes,
 }
 
 function PantallaActiva() {

@@ -2,18 +2,23 @@ import {
   collection,
   doc,
   getDocs,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
   type DocumentData,
+  type QueryDocumentSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from 'src/firebase'
 import type { Canje, CanjePendiente, Producto, ValidacionCanje } from 'src/types'
+import { obtenerProductosDisponibles } from 'src/services/productos'
 
 const COLECCION_CANJES = 'CANJES'
 
@@ -38,7 +43,7 @@ const canjeRef = (id: string) => doc(db, COLECCION_CANJES, id)
 
 function aFecha(valor: unknown): Date | string | null {
   const conToDate = valor as { toDate?: () => Date } | null
-  if (conToDate && typeof conToDate.toDate === 'function') return conToDate.toDate() // Timestamp
+  if (conToDate && typeof conToDate.toDate === 'function') return conToDate.toDate()
   if (typeof valor === 'number') return new Date(valor)
   if (typeof valor === 'string') {
     const fecha = new Date(valor)
@@ -47,36 +52,140 @@ function aFecha(valor: unknown): Date | string | null {
   return null
 }
 
+function obtenerValor(datos: DocumentData, ...claves: string[]) {
+  for (const clave of claves) {
+    if (datos[clave] !== undefined && datos[clave] !== null) {
+      return datos[clave]
+    }
+  }
+  return undefined
+}
+
 function aCanje(docSnap: { id: string; data: () => DocumentData }): Canje {
   const datos = docSnap.data()
   return {
     id: docSnap.id,
-    producto: String(datos[CAMPOS.producto] ?? '—'),
-    puntosCanjeados: Number(datos[CAMPOS.puntosCanjeados]) || 0,
-    codigo: String(datos[CAMPOS.codigo] ?? '—'),
-    fecha: aFecha(datos[CAMPOS.fecha]),
+    producto: String(obtenerValor(datos, CAMPOS.producto) ?? '—'),
+    puntosCanjeados: Number(obtenerValor(datos, CAMPOS.puntosCanjeados)) || 0,
+    codigo: String(obtenerValor(datos, CAMPOS.codigo) ?? '—'),
+    fecha: aFecha(obtenerValor(datos, CAMPOS.fecha)),
   }
+}
+
+export interface CanjeHistorial {
+  id: string
+  producto: string
+  productoId?: string
+  puntosCanjeados: number
+  codigo: string
+  fecha: Date | string | null
+  imagen?: string | null
 }
 
 const enMilisegundos = (fecha: Date | string | null) => (fecha instanceof Date ? fecha.getTime() : 0)
 
-/**
- * Busca los canjes FINALIZADOS del usuario por nombre y devuelve el más reciente.
- * Los canjes viejos cargados a mano, sin el campo Validacion, cuentan como finalizados.
- */
+export interface ResultadoCanjesPaginado {
+  items: CanjeHistorial[]
+  nextCursor: QueryDocumentSnapshot<DocumentData> | null
+  hayMas: boolean
+}
+
 export async function obtenerUltimoCanje(nombreUsuario: string): Promise<Canje | null> {
   const consulta = query(canjesRef(), where(CAMPOS.usuario, '==', nombreUsuario))
   const snapshot = await getDocs(consulta)
 
   const canjes = snapshot.docs
     .filter((docSnap) => {
-      const validacion = docSnap.data()[CAMPOS.validacion]
-      return validacion === undefined || validacion === 'finalizado'
+      const validacion = obtenerValor(docSnap.data(), CAMPOS.validacion)
+      return validacion === undefined || validacion === null || validacion === 'finalizado'
     })
     .map(aCanje)
 
   canjes.sort((a, b) => enMilisegundos(b.fecha) - enMilisegundos(a.fecha))
   return canjes[0] ?? null
+}
+
+function aCanjeHistorial(docSnap: { id: string; data: () => DocumentData }): CanjeHistorial {
+  const datos = docSnap.data()
+  const productoId = obtenerValor(datos, CAMPOS.productoId)
+  return {
+    id: docSnap.id,
+    producto: String(obtenerValor(datos, CAMPOS.producto) ?? '—'),
+    productoId: productoId ? String(productoId) : undefined,
+    puntosCanjeados: Number(obtenerValor(datos, CAMPOS.puntosCanjeados)) || 0,
+    codigo: String(obtenerValor(datos, CAMPOS.codigo) ?? '—'),
+    fecha: aFecha(obtenerValor(datos, CAMPOS.fecha)),
+  }
+}
+
+async function agregarImagenes(canjes: CanjeHistorial[]): Promise<CanjeHistorial[]> {
+  try {
+    const productos = await obtenerProductosDisponibles()
+    const mapa = new Map(productos.map((producto) => [producto.id, producto.imagen]))
+    return canjes.map((canje) => ({
+      ...canje,
+      imagen: canje.productoId ? mapa.get(canje.productoId) ?? null : null,
+    }))
+  } catch (error) {
+    console.error('Error al resolver imágenes del historial de canjes:', error)
+    return canjes
+  }
+}
+
+async function obtenerDocsPorUid(uid: string) {
+  const consulta = query(
+    canjesRef(),
+    where(CAMPOS.uid, '==', uid),
+    orderBy(CAMPOS.fecha, 'desc'),
+  )
+  const snapshot = await getDocs(consulta)
+  return snapshot.docs
+}
+
+export async function obtenerHistorialCanjes(uid: string, cantidad = 20): Promise<CanjeHistorial[]> {
+  const docs = await obtenerDocsPorUid(uid)
+
+  const canjes = docs
+    .filter((docSnap) => {
+      const validacion = obtenerValor(docSnap.data(), CAMPOS.validacion)
+      return validacion === undefined || validacion === null || validacion === 'finalizado'
+    })
+    .map(aCanjeHistorial)
+    .slice(0, cantidad)
+
+  return agregarImagenes(canjes)
+}
+
+export async function obtenerHistorialCanjesPaginado(
+  uid: string,
+  cantidad = 10,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null,
+): Promise<ResultadoCanjesPaginado> {
+  const docs = await obtenerDocsPorUid(uid)
+
+  let docsFiltrados = docs.filter((docSnap) => {
+    const validacion = obtenerValor(docSnap.data(), CAMPOS.validacion)
+    return validacion === undefined || validacion === null || validacion === 'finalizado'
+  })
+
+  if (cursor) {
+    const cursorIndex = docsFiltrados.findIndex((docSnap) => docSnap.id === cursor.id)
+    if (cursorIndex >= 0) {
+      docsFiltrados = docsFiltrados.slice(cursorIndex + 1)
+    }
+  }
+
+  const hayMas = docsFiltrados.length > cantidad
+  const docsAMostrar = hayMas ? docsFiltrados.slice(0, cantidad) : docsFiltrados
+  const canjesBase = docsAMostrar.map(aCanjeHistorial)
+  const canjes = await agregarImagenes(canjesBase)
+  const nextCursor = hayMas && docsAMostrar.length > 0 ? docsAMostrar[docsAMostrar.length - 1] : null
+
+  return { items: canjes, nextCursor, hayMas }
+}
+
+export async function obtenerHistorialCanjesSimple(uid: string, cantidad = 20): Promise<CanjeHistorial[]> {
+  return obtenerHistorialCanjes(uid, cantidad)
 }
 
 // ---------------------------------------------------------------------------
@@ -98,7 +207,7 @@ async function crearCanjePendiente({
   nombreUsuario,
   producto,
 }: DatosNuevoCanje): Promise<CanjePendiente> {
-  const ref = doc(canjesRef()) // el id lo genera Firestore: al azar e imposible de adivinar
+  const ref = doc(canjesRef())
   const vence = new Date(Date.now() + DURACION_QR_MS)
 
   await setDoc(ref, {
@@ -116,11 +225,6 @@ async function crearCanjePendiente({
   return { id: ref.id, vence }
 }
 
-/**
- * Devuelve el canje pendiente y vigente de este usuario para este producto,
- * o crea uno nuevo. Cualquier otro pendiente del usuario se cancela
- * (un solo QR activo por persona).
- */
 export async function obtenerOCrearCanjePendiente(datos: DatosNuevoCanje): Promise<CanjePendiente> {
   const consulta = query(
     canjesRef(),
@@ -135,13 +239,13 @@ export async function obtenerOCrearCanjePendiente(datos: DatosNuevoCanje): Promi
 
   for (const docSnap of pendientes.docs) {
     const campos = docSnap.data()
-    const vence = aFecha(campos[CAMPOS.vence])
+    const vence = aFecha(obtenerValor(campos, CAMPOS.vence))
 
     if (
       !reutilizable &&
       vence instanceof Date &&
       vence.getTime() > ahora &&
-      campos[CAMPOS.productoId] === datos.producto.id
+      obtenerValor(campos, CAMPOS.productoId) === datos.producto.id
     ) {
       reutilizable = { id: docSnap.id, vence }
     } else {
@@ -158,7 +262,6 @@ export async function obtenerOCrearCanjePendiente(datos: DatosNuevoCanje): Promi
   return reutilizable ?? crearCanjePendiente(datos)
 }
 
-/** Avisa en tiempo real cada vez que cambia la Validacion del canje (por ejemplo, cuando el cajero lo finaliza). */
 export function escucharValidacionCanje(
   id: string,
   onChange: (validacion: ValidacionCanje | null) => void,
@@ -167,7 +270,8 @@ export function escucharValidacionCanje(
   return onSnapshot(
     canjeRef(id),
     (snap) => {
-      onChange(snap.exists() ? (snap.data()[CAMPOS.validacion] as ValidacionCanje) : null)
+      const validacion = obtenerValor(snap.data() || {}, CAMPOS.validacion)
+      onChange(snap.exists() ? (validacion as ValidacionCanje) : null)
     },
     onError,
   )

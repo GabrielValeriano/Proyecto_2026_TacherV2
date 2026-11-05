@@ -24,6 +24,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userDocId, setUserDocId] = useState<string | null>(null)
   const [userData, setUserData] = useState<Usuario | null>(null)
   const [flowData, setFlowData] = useState<FlowData>({})
+  const [mensajeExito, setMensajeExito] = useState('')
 
 
   // Mantiene userData sincronizado en tiempo real con Firestore
@@ -46,18 +47,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const restaurarSesion = async () => {
         try {
-                await auth.authStateReady()
-                
-                // Forzamos a que cierre cualquier sesión guardada al abrir la app 
-                // para que siempre tenga que iniciar sesión de nuevo.
-                await cerrarSesionFirebase()
+          await auth.authStateReady()
+          const usuario = auth.currentUser
+          if (!usuario) return
 
-              } catch (error) {
-                console.error('Error al limpiar la sesión:', error)
-              } finally {
-                if (activo) setCargandoSesion(false)
-              }
-            }
+          let tienePerfil = true
+          try {
+            tienePerfil = await existePerfil(usuario.uid)
+          } catch (error) {
+            // Sin conexión: entramos igual, los datos cargan cuando vuelva internet
+            console.error('No se pudo verificar el perfil:', error)
+          }
+
+          if (activo && tienePerfil) {
+            setUserDocId(usuario.uid)
+            setPantallaActual('home')
+          }
+        } catch (error) {
+          console.error('Error al restaurar la sesión:', error)
+        } finally {
+          if (activo) setCargandoSesion(false)
+        }
+      }
+
       restaurarSesion()
       return () => {
         activo = false
@@ -82,10 +94,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     limpiarCache()
   }
 
-  const seleccionarProducto = (producto: Producto) => {
+  const seleccionarProducto = (producto: Producto | null) => {
     setProductoSeleccionado(producto)
-    setPantallaActual('seleccionar-producto')
   }
+  const mostrarExito = (mensaje: string, duracionMs = 2800) => {
+    setMensajeExito(mensaje)
+    setTimeout(() => {
+      setMensajeExito('')
+    }, duracionMs)
+  }
+
+  const ocultarExito = () => setMensajeExito('')
 
   return (
     <AppContext.Provider
@@ -101,9 +120,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         cerrarSesion,
         productoSeleccionado,
         seleccionarProducto,
+        mensajeExito,
+        mostrarExito,
+        ocultarExito,
       }}
     >
-      {children}
+      {cargandoSesion ? <PantallaCarga/> : children}
     </AppContext.Provider>
   )
 }
+

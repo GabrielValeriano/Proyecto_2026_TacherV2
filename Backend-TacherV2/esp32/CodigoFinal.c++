@@ -50,18 +50,16 @@ void cerrarServos() {
 }
 
 // -------------------------------------------------------------
-// Función para extraer y validar estrictamente el DNI (Corregida con delimitador '@')
+// Función para extraer y validar estrictamente el DNI
 // -------------------------------------------------------------
 String extraerDNIValido(String rawData) {
   rawData.trim();
   if (rawData.length() == 0) return "";
 
-  // Si contiene '@', es el formato PDF417 del DNI argentino
   if (rawData.indexOf('@') >= 0) {
     int indice = 0;
     String campos[12];
     
-    // Separar la cadena usando '@' como delimitador
     while (rawData.length() > 0 && indice < 12) {
       int posAt = rawData.indexOf('@');
       if (posAt != -1) {
@@ -74,7 +72,6 @@ String extraerDNIValido(String rawData) {
       indice++;
     }
 
-    // El número de DNI en los formatos de Argentina se encuentra en el índice 4
     if (indice > 4) {
       String dniCandidate = campos[4];
       dniCandidate.trim();
@@ -90,7 +87,6 @@ String extraerDNIValido(String rawData) {
     }
   }
 
-  // Si es ingreso directo o código plano (sin arrobas)
   String dniLimpio = "";
   for (int i = 0; i < rawData.length(); i++) {
     if (isDigit(rawData.charAt(i))) {
@@ -102,7 +98,7 @@ String extraerDNIValido(String rawData) {
     return dniLimpio;
   }
 
-  return ""; // Retorna vacío si no tiene formato de DNI válido
+  return ""; 
 }
 
 // -------------------------------------------------------------
@@ -147,24 +143,49 @@ String leerDNI() {
 }
 
 // -------------------------------------------------------------
-// Función Estricta Anti-Trampa (Residuo)
+// Función Estricta Anti-Trampa (Residuo con mensaje "Cierre la puerta")
 // -------------------------------------------------------------
 String obtenerResiduoEstrictoAntiTrampa() {
   String codigoEscaneado = "";
 
   Serial.println("\n==================================================");
-  Serial.println("📦 PASO 2: CIERRE LA PUERTA PRIMERO (SIN ESCANEAR AFUERA)");
+  Serial.println("📦 PASO 2: CIERRE LA PUERTA PRIMERO");
   Serial.println("==================================================");
- 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Cierre la puerta");
-  
+
+  // Mostrar mensaje inicial en LCD pidiendo cerrar la puerta si está abierta
+  bool puertaAbiertaInicial = (digitalRead(PIN_REED_SWITCH) == HIGH);
+  if (puertaAbiertaInicial) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Escanee Residuo");
+    lcd.setCursor(0, 1);
+    lcd.print("Cierre la puerta");
+  }
 
   // 1. ESPERAR A QUE LA PUERTA ESTÉ CERRADA (LOW = Cerrada)
   while (true) {
     bool puertaAbierta = (digitalRead(PIN_REED_SWITCH) == HIGH);
     if (puertaAbierta) {
+      // Si escanean cualquier cosa o intentan operar con la puerta abierta
+      if (Serial1.available() > 0 || Serial.available() > 0) {
+        // Limpiamos los rastros para que no procese basura
+        while (Serial1.available() > 0) Serial1.read();
+        while (Serial.available() > 0) Serial.read();
+
+        Serial.println("⚠️ Intento con puerta abierta. Mostrando aviso en LCD.");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Cierre la puerta");
+        lcd.setCursor(0, 1);
+        lcd.print("por favor");
+        delay(2000);
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Escanee Residuo");
+        lcd.setCursor(0, 1);
+        lcd.print("Cierre la puerta");
+      }
       delay(50);
       continue;
     } else {
@@ -387,6 +408,10 @@ void loop() {
     lcd.setCursor(0, 1);
     lcd.print(nombreUsuario.substring(0, 16));
     delay(2000);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Escanea Residuo");
+
   } else {
     Serial.println("❌ Error de conexión en Paso 1.");
     lcd.clear();
@@ -458,7 +483,7 @@ void loop() {
     int puntosValor = docRes2["puntos_valor"];
     Serial.printf("🟢 Residuo válido: %s | Valor: %d pts\n", nombreResiduo.c_str(), puntosValor);
 
-    // TEXTO AL RECONOCER EL RESIDUO (Con el nombre y puntos que vale)
+    // TEXTO AL RECONOCER EL RESIDUO
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Residuo");
@@ -489,6 +514,7 @@ void loop() {
   lcd.setCursor(0, 0);
   lcd.print("Reciclando...");
   delay(1000);
+  
   // -------------------------------------------------------------
   // PASO 3: Validación Física (Apertura y Cierre de Servos)
   // -------------------------------------------------------------
@@ -512,23 +538,27 @@ void loop() {
   int httpCode3 = httpRegistro.POST(body3);
   if (httpCode3 > 0) {
     String payload3 = httpRegistro.getString();
-    StaticJsonDocument<300> docRes3;
+    
+    // Ampliamos el tamaño del documento JSON para recibir los puntos totales de forma segura
+    StaticJsonDocument<400> docRes3;
     deserializeJson(docRes3, payload3);
 
     if (docRes3["exito"].as<bool>()) {
       int puntosGanados = docRes3["puntos_ganados"];
+      int puntosTotales = docRes3["puntos_totales"]; // Asegurate de que tu backend mande esto
+
       Serial.println("========================================");
       Serial.printf("🎉 ¡RECICLAJE COMPLETADO CON ÉXITO!\n");
-      Serial.printf("🎁 Se acreditaron %d puntos en tu cuenta.\n", puntosGanados);
+      Serial.printf("🎁 Se acreditaron %d puntos en tu cuenta. Total: %d\n", puntosGanados, puntosTotales);
       Serial.println("========================================");
 
-      // TEXTO AL COMPLETAR EL RECICLAJE
+      // TEXTO FINAL REQUERIDO EN EL LCD
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("!Felicidades!");
-      lcd.setCursor(0, 1);
       lcd.print("Ganaste: " + String(puntosGanados) + "pts");
-      delay(3000);
+      lcd.setCursor(0, 1);
+      lcd.print("Puntos Totales:" + String(puntosTotales));
+      delay(4000); // Mostramos los puntos unos segundos más
     } else {
       Serial.println("❌ Error al registrar el reciclaje en el servidor.");
       lcd.clear();

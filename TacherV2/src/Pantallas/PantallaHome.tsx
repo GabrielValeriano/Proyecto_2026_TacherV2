@@ -27,37 +27,38 @@ function TarjetaPuntosYCanje({ puntos, onCanjear }: { puntos: number; onCanjear:
 
       <View style={estilos.contenidoPuntos}>
         <Text style={estilos.etiquetaPuntosDisponibles}>Puntos Disponibles</Text>
-        <Text style={estilos.puntosGrandes}>{puntos.toLocaleString('es-AR')}</Text>
-        <Text style={estilos.subtextoPuntos}>Fijate si podes canjear productos del kiosco</Text>
+        <View style={estilos.filaPuntosYCanje}>
+          <Text style={estilos.puntosGrandes} numberOfLines={1} adjustsFontSizeToFit>
+            {puntos.toLocaleString('es-AR')}
+          </Text>
+          <BotonPrimario
+            label="Canjear"
+            icon={<Gift size={20} color={COLORES.blanco} />}
+            onPress={onCanjear}
+            style={estilos.botonCanjear}
+          />
+        </View>
+        <Text style={estilos.subtextoPuntos}>Canjea productos del kiosco</Text>
       </View>
-
-      <BotonPrimario
-        label="Canjear"
-        icon={<Gift size={20} color={COLORES.blanco} />}
-        onPress={onCanjear}
-        style={estilos.botonCanjear}
-      />
     </View>
   )
 }
 
-function TarjetaReciclajesProgreso({
+function TarjetaReciclajes({
   reciclajes,
   onVerReciclajes,
 }: {
   reciclajes: number
   onVerReciclajes: () => void
 }) {
-  const resumen = getResumenRangoPorReciclajes(reciclajes)
-  const { actual, proximo, progreso } = resumen
-  const IconoRango = actual.icon
+  const { proximo, progreso } = getResumenRangoPorReciclajes(reciclajes)
 
   const mensajeProgreso = proximo
     ? `Llevas ${reciclajes.toLocaleString('es-AR')} de ${proximo.min.toLocaleString('es-AR')} reciclajes para Rango ${proximo.name}`
     : '¡Alcanzaste el rango máximo!'
 
   return (
-    <View style={estilos.tarjetaReciclajesProgreso}>
+    <View style={estilos.tarjetaReciclajes}>
       <View style={estilos.filaHeaderReciclajes}>
         <View style={estilos.infoReciclajes}>
           <Text style={estilos.etiquetaReciclajes}>Reciclajes Completados</Text>
@@ -133,7 +134,7 @@ export function PantallaHome() {
 
         <TarjetaPuntosYCanje puntos={puntos} onCanjear={() => navigate('canjes')} />
 
-        <TarjetaReciclajesProgreso reciclajes={reciclajes} onVerReciclajes={() => navigate('historial-reciclajes')} />
+        <TarjetaReciclajes reciclajes={reciclajes} onVerReciclajes={() => navigate('historial-reciclajes')} />
 
 
         <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
@@ -210,7 +211,13 @@ const estilos = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
+  filaPuntosYCanje: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   puntosGrandes: {
+    flex: 1,
     fontSize: 64,
     lineHeight: 70,
     fontWeight: '800',
@@ -223,13 +230,34 @@ const estilos = StyleSheet.create({
     color: COLORES.sobreOscuro,
   },
   botonCanjear: {
+    width: 'auto',
+    paddingHorizontal: 16,
+    height: 50,
+    borderRadius: 16,
+  },
+  barraProgresoContenedor: {
+    gap: 8,
+  },
+  barraProgresoFondo: {
     width: '100%',
-    height: 56,
-    borderRadius: 18,
+    height: 10,
+    borderRadius: 9999,
+    backgroundColor: COLORES.suave,
+    overflow: 'hidden',
+  },
+  barraProgresoRelleno: {
+    height: '100%',
+    borderRadius: 9999,
+    backgroundColor: COLORES.principal,
+  },
+  textoProgreso: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
   },
 
-  // Tarjeta Reciclajes con barra
-  tarjetaReciclajesProgreso: {
+  // Tarjeta Reciclajes
+  tarjetaReciclajes: {
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORES.linea,
@@ -283,26 +311,6 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 14,
     height: 42,
     borderRadius: 14,
-  },
-  barraProgresoContenedor: {
-    gap: 8,
-  },
-  barraProgresoFondo: {
-    width: '100%',
-    height: 10,
-    borderRadius: 9999,
-    backgroundColor: COLORES.suave,
-    overflow: 'hidden',
-  },
-  barraProgresoRelleno: {
-    height: '100%',
-    borderRadius: 9999,
-    backgroundColor: COLORES.principal,
-  },
-  textoProgreso: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: COLORES.textoSuave,
   },
 
   // Sección Tu camino

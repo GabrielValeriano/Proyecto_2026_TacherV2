@@ -3,23 +3,40 @@ import { StyleSheet } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { PantallaEscaner } from 'src/Pantallas/PantallaEscaner'
 import { PantallaInicio } from 'src/Pantallas/PantallaInicio'
-import { PantallaEnDesarrollo } from 'src/Pantallas/PantallaEnDesarrollo'
+import { PantallaInstrucciones } from 'src/Pantallas/PantallaInstrucciones'
+import { PantallaResultado } from 'src/Pantallas/PantallaResultado'
+import type { ResultadoCanje } from 'src/services/canjes'
 import { COLORES } from 'src/theme'
 
-type Vista = 'inicio' | 'instrucciones' | 'escaner'
+type Vista = 'inicio' | 'instrucciones' | 'escaner' | 'resultado'
 
 function Contenido() {
   const [vista, setVista] = useState<Vista>('inicio')
+  const [resultado, setResultado] = useState<ResultadoCanje | null>(null)
+
 
   if (vista === 'instrucciones') {
-    return <PantallaEnDesarrollo titulo="Instrucciones" onVolver={() => setVista('inicio')} />
+    return <PantallaInstrucciones onVolver={() => setVista('inicio')} />
   }
 
   if (vista === 'escaner') {
     return (
       <PantallaEscaner
         onCancelar={() => setVista('inicio')}
-        onResultado={() => {}} // No hace nada al escanear
+        onResultado={(r) => {
+          setResultado(r)
+          setVista('resultado')
+        }}
+      />
+    )
+  }
+
+  if (vista === 'resultado' && resultado) {
+    return (
+      <PantallaResultado
+        resultado={resultado}
+        onVolver={() => setVista('inicio')}
+        onEscanearDeNuevo={() => setVista('escaner')}
       />
     )
   }
@@ -46,5 +63,14 @@ const estilos = StyleSheet.create({
   raiz: {
     flex: 1,
     backgroundColor: COLORES.blanco,
+  },
+  cargando: {
+    flex: 1,
+    backgroundColor: COLORES.blanco,
+  },
+  cargandoCentro: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

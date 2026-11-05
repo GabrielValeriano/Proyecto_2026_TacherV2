@@ -123,7 +123,7 @@ app.post('/api/verificar-residuo', async (req, res) => {
 });
 
 // =========================================================================
-// PASO 4: Registrar Reciclaje (Sumar Puntos y Guardar Historial)
+// PASO 4: Registrar Reciclaje usando el campo Puntos de USUARIOS
 // =========================================================================
 app.post('/api/registrar-reciclaje', async (req, res) => {
   try {
@@ -140,7 +140,7 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
     const dniString = dni.toString().trim();
     const codigoString = codigo_producto.toString().trim();
 
-    // 1. Buscar usuario nuevamente para asegurar consistencia y obtener referencia
+    // 1. Buscar usuario
     const usuariosRef = db.collection('USUARIOS');
     const usuarioSnap = await usuariosRef.where('DNI', '==', dniString).get();
 
@@ -152,7 +152,7 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
     const usuarioData = usuarioDoc.data();
     const nombreUsuario = usuarioData.Nombre || 'Usuario';
 
-    // 2. Buscar residuo para obtener sus puntos y nombre exactos
+    // 2. Buscar residuo
     const residuosRef = db.collection('RESIDUOS');
     const residuoSnap = await residuosRef.where('Codigo_barras', '==', codigoString).get();
 
@@ -164,12 +164,17 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
     const puntosGanados = Number(residuoData.Puntos_valor) || 0;
     const nombreResiduo = residuoData.Nombre || 'Residuo';
 
-    // 3. Actualizar puntos del usuario de forma atómica
+    // 3. Sumar al campo 'Puntos' e incrementar 'reciclajes' en +1 en la colección USUARIOS
     await usuarioDoc.ref.update({
-      Puntos: FieldValue.increment(puntosGanados)
+      Puntos: FieldValue.increment(puntosGanados),
+      reciclajes: FieldValue.increment(1)
     });
 
-    // 4. Registrar en la colección 'reciclajes'
+    // 4. Consultar el documento actualizado de USUARIOS para obtener el total real de 'Puntos'
+    const usuarioActualizadoSnap = await usuarioDoc.ref.get();
+    const puntosTotalesReales = usuarioActualizadoSnap.data().Puntos || 0;
+
+    // 5. Registrar el historial en la colección 'RECICLAJES' (sin duplicar campos innecesarios)
     await db.collection('RECICLAJES').add({
       uid: usuarioDoc.id,
       nombre_usuario: nombreUsuario,
@@ -180,11 +185,13 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
       fecha: Timestamp.now()
     });
 
+    // 6. Devolver a la ESP32 los puntos ganados y el total leídos directo de USUARIOS
     return res.status(200).json({
       exito: true,
       puntos_ganados: puntosGanados,
+      puntos_totales: puntosTotalesReales, // 👈 Extraído directamente de la tabla USUARIOS
       codigo_error: 0,
-      mensaje: 'Reciclaje completado con éxito y puntos acreditados'
+      mensaje: 'Reciclaje completado con éxito'
     });
 
   } catch (error) {

@@ -13,13 +13,13 @@ import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { Encabezado } from 'src/components/Encabezado'
 import { MensajeError } from 'src/components/MensajeError'
 import { useApp } from 'src/context/AppContext'
-import { getRangoParaPuntos, RANGOS, type Rango } from 'src/domain/rangos'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useRanking } from 'src/hooks/useRanking'
 import type { PuestoRanking } from 'src/services/ranking'
 import { COLORES, SOMBRAS } from 'src/theme'
 import { EsqueletoPodio } from 'src/components/EsqueletoPodio'
 import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
+import { SelectorBeneficios } from 'src/components/SelectorBeneficios'
 import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 
 
@@ -29,89 +29,6 @@ import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 
 
 const ORDEN_PODIO = [1, 0, 2] // Segundo, Primero, Tercero
-
-
-// ---------------------------------------------------------------------------
-// Guía de rangos (5 rangos)
-// ---------------------------------------------------------------------------
-
-
-const GUIA_RANGOS: Record<string, { titulo: string; descripcion: string }> = {
- Brote: {
-   titulo: 'Brote',
-   descripcion: 'Estás empezando. Cada botella que reciclás es una semilla que empieza a crecer.',
- },
- Hoja: {
-   titulo: 'Hoja',
-   descripcion: 'Tomás impulso. Tu compromiso empieza a verdecer en la comunidad.',
- },
- Planta: {
-   titulo: 'Planta',
-   descripcion: 'Ya tenés el hábito. Tu constancia empieza a dar frutos en toda la escuela.',
- },
- Arbol: {
-   titulo: 'Árbol',
-   descripcion: 'Sos un referente. Tu impacto es duradero y le da sombra a toda la comunidad.',
- },
- Bosque: {
-   titulo: 'Bosque',
-   descripcion: 'Máximo nivel alcanzado. Tu liderazgo ecológico transforma todo el entorno.',
- },
-}
-
-
-const TEMAS_RANGO = [
- {
-   fondo: COLORES.suave,
-   borde: COLORES.linea,
-   circulo: COLORES.principal,
-   icono: COLORES.blanco,
-   titulo: COLORES.texto,
-   texto: COLORES.textoSuave,
-   pildoraFondo: COLORES.blanco,
-   pildoraTexto: COLORES.verde700,
- },
- {
-   fondo: COLORES.blanco,
-   borde: COLORES.linea,
-   circulo: COLORES.verde700,
-   icono: COLORES.blanco,
-   titulo: COLORES.texto,
-   texto: COLORES.textoSuave,
-   pildoraFondo: COLORES.suave,
-   pildoraTexto: COLORES.verde700,
- },
- {
-   fondo: COLORES.principal,
-   borde: COLORES.principal,
-   circulo: 'rgba(255,255,255,0.22)',
-   icono: COLORES.blanco,
-   titulo: COLORES.blanco,
-   texto: 'rgba(255,255,255,0.9)',
-   pildoraFondo: 'rgba(255,255,255,0.22)',
-   pildoraTexto: COLORES.blanco,
- },
- {
-   fondo: '#2D4A3E',
-   borde: '#2D4A3E',
-   circulo: COLORES.acento,
-   icono: COLORES.oscuro,
-   titulo: COLORES.blanco,
-   texto: '#E2E8F0',
-   pildoraFondo: 'rgba(255,255,255,0.15)',
-   pildoraTexto: COLORES.acento,
- },
- {
-   fondo: COLORES.oscuro,
-   borde: COLORES.oscuro,
-   circulo: COLORES.acento,
-   icono: COLORES.oscuro,
-   titulo: COLORES.blanco,
-   texto: COLORES.sobreOscuro,
-   pildoraFondo: 'rgba(255,255,255,0.14)',
-   pildoraTexto: COLORES.acento,
- },
-]
 
 
 // ---------------------------------------------------------------------------
@@ -248,76 +165,11 @@ function FilaPuesto({ puesto, posicion, esUsuario }: FilaPuestoProps) {
 
 
      <View style={estilos.capsulaPuntosContenedor}>
-       <Recycle size={16} color={COLORES.acento} />
+       <Recycle size={16} color={COLORES.acento}  />
        <Text style={estilos.capsulaPuntos}>
          {((puesto as any).reciclajes ?? puesto.cantidad ?? 0).toLocaleString('es-AR')}
        </Text>
      </View>
-   </View>
- )
-}
-
-
-// ---------------------------------------------------------------------------
-// Guía de rangos
-// ---------------------------------------------------------------------------
-
-
-function TarjetaRango({ rango, indice, esActual }: { rango: Rango; indice: number; esActual: boolean }) {
- const tema = TEMAS_RANGO[Math.min(indice, TEMAS_RANGO.length - 1)]
- const guia = GUIA_RANGOS[rango.name] ?? {
-   titulo: rango.name,
-   descripcion: 'Seguí reciclando para llegar todavía más lejos.',
- }
- const Icono = rango.icon
- const requisito =
-   rango.min === 0 ? 'Desde tu primer reciclaje' : `Desde ${rango.min.toLocaleString('es-AR')} puntos`
-
-
- return (
-   <View style={[estilos.tarjetaRango, { backgroundColor: tema.fondo, borderColor: tema.borde }]}>
-     <View style={[estilos.circuloRango, { backgroundColor: tema.circulo }]}>
-       <Icono size={26} color={tema.icono} />
-     </View>
-
-
-     <View style={estilos.rangoTextos}>
-       <View style={estilos.rangoEncabezado}>
-         <Text style={[estilos.rangoNombre, { color: tema.titulo }]}>{guia.titulo}</Text>
-         {esActual && (
-           <View style={estilos.insigniaTuRango}>
-             <Text style={estilos.insigniaTuRangoTexto}>Tu rango</Text>
-           </View>
-         )}
-       </View>
-
-
-       <View style={[estilos.pildoraRango, { backgroundColor: tema.pildoraFondo }]}>
-         <Text style={[estilos.pildoraRangoTexto, { color: tema.pildoraTexto }]}>{requisito}</Text>
-       </View>
-
-
-       <Text style={[estilos.rangoDescripcion, { color: tema.texto }]}>{guia.descripcion}</Text>
-     </View>
-   </View>
- )
-}
-
-
-function GuiaRangos({ indiceActual }: { indiceActual: number }) {
- return (
-   <View style={estilos.guiaContainer}>
-     <View style={estilos.guiaEncabezado}>
-       <Text style={estilos.tituloSeccion}>Guía de rangos</Text>
-       <Text style={estilos.subtituloSeccion}>
-         Cada reciclaje en la caja te da puntos para crecer de rango.
-       </Text>
-     </View>
-
-
-     {RANGOS.map((rango, indice) => (
-       <TarjetaRango key={rango.name} rango={rango} indice={indice} esActual={indice === indiceActual} />
-     ))}
    </View>
  )
 }
@@ -340,8 +192,6 @@ export function PantallaRanking() {
   const rangoActual = userData?.Rango || resumenRango.actual.name
 
 
- const puntos = Number(userData?.Puntos) || 0
- const indiceRango = RANGOS.indexOf(getRangoParaPuntos(puntos))
   const podio = puestos.slice(0, 3)
  const puestosRestantes = puestos.slice(3, 10)
  const visibles = mostrarTodos ? puestosRestantes : puestosRestantes.slice(0, 3)
@@ -363,8 +213,8 @@ export function PantallaRanking() {
 
 
          <Text style={estilos.titulo}>
-           Ranking de{'\n'}
-           <Text style={estilos.tituloAcento}>recicladores</Text>
+           Ranking de {'\n'}
+           <Text style={estilos.tituloAcento}>Recicladores</Text>
          </Text>
          <Text style={estilos.subtituloHero}>Los 10 que más reciclan en la caja TeacherV2</Text>
 
@@ -422,9 +272,9 @@ export function PantallaRanking() {
           <CaminoDeRangos puntos={reciclajes} rangoActual={rangoActual}/>
         </View>
 
-       {/* Sección inferior: Guía de Rangos */}
+       {/* Sección inferior: Selector de Beneficios */}
        <View style={estilos.cuerpoInferior}>
-         <GuiaRangos indiceActual={indiceRango} />
+         <SelectorBeneficios reciclajes={reciclajes} />
        </View>
 
 
@@ -533,7 +383,6 @@ const estilos = StyleSheet.create({
    transform: [{ translateY: -16 }],
  },
  coronaContainer: {
-   marginBottom: -6,
    zIndex: 2,
  },
  numeroPuestoPodio: {
@@ -580,6 +429,7 @@ const estilos = StyleSheet.create({
    flexDirection: 'row',
    alignItems: 'center',
    justifyContent: 'space-between',
+   gap: 12, // separa el nombre (o "Vos") del ícono de reciclaje
    backgroundColor: 'rgba(255, 255, 255, 0.06)',
    borderRadius: 9999,
    paddingVertical: 12,
@@ -663,78 +513,8 @@ const estilos = StyleSheet.create({
 
 
  cuerpoInferior: {
-   paddingHorizontal: 20,
-   paddingTop: 24,
- },
- guiaContainer: {
-   gap: 14,
- },
- guiaEncabezado: {
-   gap: 4,
- },
- tituloSeccion: {
-   fontSize: 20,
-   fontWeight: '800',
-   letterSpacing: -0.5,
-   color: COLORES.texto,
- },
- subtituloSeccion: {
-   fontSize: 13,
-   color: COLORES.textoSuave,
- },
- tarjetaRango: {
-   flexDirection: 'row',
-   gap: 14,
-   borderRadius: 20,
-   borderWidth: 1,
-   padding: 14,
- },
- circuloRango: {
-   width: 48,
-   height: 48,
-   alignItems: 'center',
-   justifyContent: 'center',
-   borderRadius: 24,
- },
- rangoTextos: {
-   flex: 1,
-   gap: 6,
- },
- rangoEncabezado: {
-   flexDirection: 'row',
-   alignItems: 'center',
-   justifyContent: 'space-between',
-   gap: 8,
- },
- rangoNombre: {
-   fontSize: 17,
-   fontWeight: '800',
-   letterSpacing: -0.3,
- },
- insigniaTuRango: {
-   borderRadius: 9999,
-   backgroundColor: COLORES.acento,
-   paddingHorizontal: 8,
-   paddingVertical: 2,
- },
- insigniaTuRangoTexto: {
-   fontSize: 10,
-   fontWeight: '700',
-   color: COLORES.oscuro,
- },
- pildoraRango: {
-   alignSelf: 'flex-start',
-   borderRadius: 9999,
    paddingHorizontal: 10,
-   paddingVertical: 3,
- },
- pildoraRangoTexto: {
-   fontSize: 12,
-   fontWeight: '700',
- },
- rangoDescripcion: {
-   fontSize: 13,
-   lineHeight: 18,
+   paddingTop: 24,
  },
   seccionCamino: {
     gap: 12,

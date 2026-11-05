@@ -14,7 +14,7 @@ export function CaminoDeRangos({ puntos, rangoActual }: { puntos: number; rangoA
 
   return (
     <View style={estilos.tarjeta}>
-      <Text style={estilos.titulo}>Tu rango actual es {rangoActual}</Text>
+      <Text style={estilos.titulo}>Tu camino de Beneficios</Text>
 
       <View style={estilos.fila}>
         {RANGOS.map((rango, indice) => {
@@ -44,7 +44,7 @@ export function CaminoDeRangos({ puntos, rangoActual }: { puntos: number; rangoA
                   <Icono size={20} color={colorIcono} />
                 </View>
                 <Text style={[estilos.nombre, estado === 'actual' && estilos.nombreActual]}>
-                  {rango.name}
+                  {rango.name} = {rango.min}
                 </Text>
               </View>
             </React.Fragment>
@@ -75,7 +75,7 @@ const estilos = StyleSheet.create({
     alignItems: 'flex-start',
   },
   paso: {
-    width: 60,
+    width: 90,
     alignItems: 'center',
     gap: 6,
   },

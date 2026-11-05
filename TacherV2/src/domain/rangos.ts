@@ -8,7 +8,6 @@ export interface Rango {
 
 export const RANGOS: Rango[] = [
   { name: 'Brote', min: 0, icon: Sprout },
-  { name: 'Hoja', min: 10, icon: Leaf },
   { name: 'Planta', min: 25, icon: Flower2 },
   { name: 'Arbol', min: 50, icon: TreeDeciduous },
   { name: 'Bosque', min: 100, icon: Trees },

@@ -8,7 +8,9 @@ import {
  type StyleProp,
  type ViewStyle,
 } from 'react-native'
-import { Crown, Recycle, Sparkles, ChevronDown, ChevronUp, User } from 'lucide-react-native'
+import { Crown, Recycle, Sparkles, ChevronDown, ChevronUp } from 'lucide-react-native'
+import { AvatarInicial } from 'src/components/CirculoMarca'
+import { inicialDe } from 'src/utils/iniciales'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { Encabezado } from 'src/components/Encabezado'
 import { MensajeError } from 'src/components/MensajeError'
@@ -20,7 +22,6 @@ import { COLORES, SOMBRAS } from 'src/theme'
 import { EsqueletoPodio } from 'src/components/EsqueletoPodio'
 import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
 import { SelectorBeneficios } from 'src/components/SelectorBeneficios'
-import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 
 
 // ---------------------------------------------------------------------------
@@ -84,21 +85,23 @@ function ColumnaPodio({ indice, puesto, esUsuario }: ColumnaPodioProps) {
      )}
 
 
-     <View
-       style={[
-         estilos.avatarPodioEstiloFoto,
-         {
-           width: tamañoAvatar,
-           height: tamañoAvatar,
-           borderRadius: tamañoAvatar / 2,
-           borderColor: esUsuario ? COLORES.acento : 'rgba(255, 255, 255, 0.25)',
-           backgroundColor: 'rgba(255, 255, 255, 0.08)',
-         },
-         !puesto && estilos.avatarVacio,
-       ]}
-     >
-       <User size={esPrimero ? 44 : 34} color={esUsuario ? COLORES.acento : COLORES.blanco} />
-     </View>
+     {puesto ? (
+       <AvatarInicial
+         texto={inicialDe(puesto.nombre) || '?'}
+         size={tamañoAvatar}
+         borde={{
+           color: esUsuario ? COLORES.acento : 'rgba(255, 255, 255, 0.35)',
+           ancho: esUsuario ? 3 : 2,
+         }}
+       />
+     ) : (
+       <View
+         style={[
+           estilos.avatarVacio,
+           { width: tamañoAvatar, height: tamañoAvatar, borderRadius: tamañoAvatar / 2 },
+         ]}
+       />
+     )}
 
 
      <Text style={estilos.nombrePodio} numberOfLines={1}>
@@ -152,9 +155,15 @@ function FilaPuesto({ puesto, posicion, esUsuario }: FilaPuestoProps) {
    <View style={[estilos.filaCapsula, esUsuario && estilos.filaCapsulaUsuario]}>
      <View style={estilos.capsulaIzquierda}>
        <Text style={estilos.capsulaPosicion}>{posicion}</Text>
-       <View style={estilos.capsulaAvatar}>
-         <User size={20} color={esUsuario ? COLORES.acento : COLORES.blanco} />
-       </View>
+       <AvatarInicial
+         texto={inicialDe(puesto.nombre) || '?'}
+         size={38}
+         sombra={false}
+         borde={{
+           color: esUsuario ? COLORES.acento : 'rgba(255, 255, 255, 0.25)',
+           ancho: esUsuario ? 2 : 1,
+         }}
+       />
        <View style={estilos.capsulaTextos}>
          <Text style={estilos.capsulaNombre} numberOfLines={1}>
            {puesto.nombre}
@@ -187,9 +196,7 @@ export function PantallaRanking() {
  const [mostrarTodos, setMostrarTodos] = useState(false)
 
 
-  const reciclajes = Number((userData as any)?.reciclajes ?? (userData as any)?.Reciclajes ?? 0) || 0
-  const resumenRango = getResumenRangoPorReciclajes(reciclajes)
-  const rangoActual = userData?.Rango || resumenRango.actual.name
+  const reciclajes = Math.max(0, Number(userData?.reciclajes) || 0)
 
 
   const podio = puestos.slice(0, 3)
@@ -216,7 +223,7 @@ export function PantallaRanking() {
            Ranking de {'\n'}
            <Text style={estilos.tituloAcento}>Recicladores</Text>
          </Text>
-         <Text style={estilos.subtituloHero}>Los 10 que más reciclan en la caja TeacherV2</Text>
+         <Text style={estilos.subtituloHero}>Los 10 que más reciclan en la caja TacherV2</Text>
 
 
          {cargando ? (
@@ -269,7 +276,7 @@ export function PantallaRanking() {
 
        
         <View style={estilos.seccionCamino}>
-          <CaminoDeRangos puntos={reciclajes} rangoActual={rangoActual}/>
+          <CaminoDeRangos reciclajes={reciclajes} />
         </View>
 
        {/* Sección inferior: Selector de Beneficios */}
@@ -391,14 +398,11 @@ const estilos = StyleSheet.create({
    color: COLORES.blanco,
    marginBottom: 4,
  },
- avatarPodioEstiloFoto: {
-   alignItems: 'center',
-   justifyContent: 'center',
-   borderWidth: 2.5,
- },
  avatarVacio: {
+   borderWidth: 2,
    borderStyle: 'dashed',
-   opacity: 0.5,
+   borderColor: 'rgba(255, 255, 255, 0.35)',
+   backgroundColor: 'rgba(255, 255, 255, 0.06)',
  },
  nombrePodio: {
    width: '100%',
@@ -453,14 +457,6 @@ const estilos = StyleSheet.create({
    color: COLORES.blanco,
    width: 20,
    textAlign: 'center',
- },
- capsulaAvatar: {
-   width: 38,
-   height: 38,
-   borderRadius: 19,
-   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-   alignItems: 'center',
-   justifyContent: 'center',
  },
  capsulaTextos: {
    flex: 1,

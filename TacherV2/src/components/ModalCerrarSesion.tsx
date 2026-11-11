@@ -25,7 +25,7 @@ export function ModalCerrarSesion({ visible, onCancelar, onConfirmar, cargando =
           activeOpacity={1}
           onPress={onCancelar}
           disabled={cargando}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
         <View style={estilos.cardContainer} pointerEvents="box-none">
           <View style={estilos.card}>
@@ -63,7 +63,7 @@ export function ModalCerrarSesion({ visible, onCancelar, onConfirmar, cargando =
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: COLORES.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

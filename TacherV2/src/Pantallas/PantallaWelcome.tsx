@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
-import { TeacherV2Logo } from 'src/components/TeacherV2Logo'
+import { MarcaTacherV2, TacherV2Logo } from 'src/components/TacherV2Logo'
 import { COLORES } from 'src/theme'
 import { useApp } from 'src/context/AppContext'
 
@@ -10,12 +10,18 @@ export function PantallaWelcome() {
 
   return (
     <View style={estilos.pantalla}>
-      <View style={estilos.encabezado}>
-        <View style={estilos.marcaLogo}>
-          <TeacherV2Logo size={72} withWordmark />
-        </View>
-        <View style={estilos.bloqueTextos}>
-          <Text style={estilos.titulo}>Reciclar Con Un Propósito</Text>
+      {/* Fondo: dos círculos muy suaves para que no sea un blanco plano */}
+      <View style={estilos.circuloFondoGrande} />
+      <View style={estilos.circuloFondoChico} />
+
+      <View style={estilos.marca}>
+        <TacherV2Logo size={128} halo />
+
+        <View style={estilos.textos}>
+          <View accessibilityRole="header">
+            <MarcaTacherV2 tamanio={44} />
+          </View>
+          <Text style={estilos.eslogan}>Reciclar con un propósito</Text>
           <Text style={estilos.descripcion}>
             Sumá puntos reciclando en tu escuela y canjealos por recompensas increíbles.
           </Text>
@@ -23,8 +29,8 @@ export function PantallaWelcome() {
       </View>
 
       <View style={estilos.botones}>
-        <BotonPrimario 
-          label="Iniciar Sesión" 
+        <BotonPrimario
+          label="Iniciar Sesión"
           onPress={() => navigate('login-email')} />
         <BotonPrimario
           label="Registrarse"
@@ -40,41 +46,64 @@ const estilos = StyleSheet.create({
   pantalla: {
     flex: 1,
     justifyContent: 'space-between',
-    backgroundColor: COLORES.blanco,
+    overflow: 'hidden',
+    backgroundColor: COLORES.fondo,
     paddingHorizontal: 24,
     paddingBottom: 48,
-    paddingTop: 64,
+    paddingTop: 48,
   },
-  encabezado: {
+
+  // --- Fondo
+  circuloFondoGrande: {
+    position: 'absolute',
+    top: -140,
+    right: -120,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: COLORES.suave,
+    opacity: 0.6,
+  },
+  circuloFondoChico: {
+    position: 'absolute',
+    top: 220,
+    left: -90,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: COLORES.suave,
+    opacity: 0.35,
+  },
+
+  // --- Logo y textos
+  marca: {
+    flex: 1,
     alignItems: 'center',
-    gap: 24,
+    justifyContent: 'center',
+    gap: 36,
+    paddingBottom: 32,
   },
-  marcaLogo: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORES.verde200,
-    backgroundColor: COLORES.verde50,
-    padding: 24,
-  },
-  bloqueTextos: {
+  textos: {
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  titulo: {
+  eslogan: {
     textAlign: 'center',
-    fontSize: 24,
-    lineHeight: 32,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-    color: COLORES.gris900,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600',
+    color: COLORES.verde700,
   },
   descripcion: {
+    maxWidth: 320,
+    marginTop: 4,
     textAlign: 'center',
-    paddingHorizontal: 16,
-    fontSize: 14,
-    lineHeight: 22.75,
-    color: COLORES.gris500,
+    fontSize: 15,
+    lineHeight: 23,
+    color: COLORES.textoSuave,
   },
+
+  // --- Botones (sin cambios)
   botones: {
     width: '100%',
     gap: 12,

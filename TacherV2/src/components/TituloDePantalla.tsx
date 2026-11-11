@@ -11,8 +11,8 @@ const estilos = StyleSheet.create({
     textAlign: 'center',
     fontSize: 30,
     lineHeight: 36,
-    fontWeight: '700',
-    letterSpacing: -0.75,
+    fontWeight: '800',
+    letterSpacing: -0.9,
     color: COLORES.gris900,
   },
 })

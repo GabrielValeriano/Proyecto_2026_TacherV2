@@ -16,7 +16,6 @@ import { useGoogleAuthFlow } from 'src/hooks/useGoogleAuthFlow'
 import { iniciarSesionConEmail } from 'src/services/autenticacion'
 import { existePerfil } from 'src/services/usuarios'
 import { COLORES } from 'src/theme'
-import { mensajeDeError } from 'src/utils/errores'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaLoginEmail() {
@@ -51,7 +50,7 @@ export function PantallaLoginEmail() {
       }
     } catch (err) {
       console.error('Error al iniciar sesión:', err)
-      setError('Error al conectar con el servidor: ' + mensajeDeError(err, 'Intentalo más tarde.'))
+      setError('Ocurrió un problema de conexión. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -106,8 +105,6 @@ export function PantallaLoginEmail() {
             <Text style={estilos.textoOlvide}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
 
-          <MensajeError message={error} />
-
           <BotonPrimario label="Iniciar Sesión" onPress={handleIniciarSesion} loading={loading} />
 
          <SeparadorO texto="o iniciar sesión con" />
@@ -117,6 +114,12 @@ export function PantallaLoginEmail() {
             onPress={handleGoogle}
             loading={loadingGoogle}
           />
+        </View>
+
+        {/* El error va entre Google y el enlace inferior. El espacio está reservado: cuando
+            aparece no empuja los campos de arriba. */}
+        <View style={estilos.zonaError}>
+          <MensajeError message={error} />
         </View>
 
         <EnlaceAlternativo
@@ -146,6 +149,10 @@ const estilos = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: 20,
+  },
+  zonaError: {
+    minHeight: 64,
+    justifyContent: 'center',
   },
   enlaceOlvide: {
     alignSelf: 'flex-end',

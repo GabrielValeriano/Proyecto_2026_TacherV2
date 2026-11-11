@@ -19,6 +19,9 @@ export type Pantalla =
   | 'ajustes'
   | 'historial-canjes'
   | 'notificaciones'
+  | 'recuperar-email'
+  | 'recuperar-codigo'
+  | 'recuperar-contrasena'
 
 export type ProveedorAuth = 'email' | 'google.com'
 
@@ -39,6 +42,8 @@ export interface FlowData {
   nombre?: string
   dni?: string
   proveedor?: ProveedorAuth
+  /** Recuperación de contraseña: lo da el backend al verificar el código de 8 dígitos. */
+  tokenRecuperacion?: string
 }
 
 export interface AppContextValue {

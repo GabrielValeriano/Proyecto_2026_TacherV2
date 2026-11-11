@@ -7,3 +7,9 @@ export const EMAILJS = {
   templateId: 'template_nsfs7b1',
   publicKey: 'qPBhMhwXdDurztFHm',
 } as const
+
+/**
+ * Backend (Backend-TacherV2/ServerNuevo.js). El teléfono tiene que poder llegar a esta dirección:
+ * misma red Wi-Fi que la PC del servidor, o la URL pública si se publica en internet.
+ */
+export const BACKEND_URL = 'http://10.56.16.12:5000'

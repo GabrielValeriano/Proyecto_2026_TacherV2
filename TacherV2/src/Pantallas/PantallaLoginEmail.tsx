@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Lock, Mail } from 'lucide-react-native'
 import { BotonGoogle } from 'src/components/BotonGoogle'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { CampoInput } from 'src/components/CampoInput'
 import { EnlaceAlternativo } from 'src/components/EnlaceAlternativo'
 import { MensajeError } from 'src/components/MensajeError'
+import { MensajeExito } from 'src/components/MensajeExito'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { TituloDePantalla } from 'src/components/TituloDePantalla'
 import { SeparadorO } from 'src/components/SeparadorO'
@@ -56,6 +57,12 @@ export function PantallaLoginEmail() {
     }
   }
 
+  const handleOlvideContrasena = () => {
+    // Si ya escribió el mail, lo llevamos completado a la pantalla de recuperación
+    actualizarFlowData({ email: email.trim() || undefined })
+    navigate('recuperar-email')
+  }
+
   const handleGoogle = () => {
     setError('')
     iniciarSesionConGoogle(setError)
@@ -91,6 +98,14 @@ export function PantallaLoginEmail() {
             icon={<Lock size={16} color={COLORES.verde} />}
           />
 
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleOlvideContrasena}
+            style={estilos.enlaceOlvide}
+          >
+            <Text style={estilos.textoOlvide}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
           <MensajeError message={error} />
 
           <BotonPrimario label="Iniciar Sesión" onPress={handleIniciarSesion} loading={loading} />
@@ -110,6 +125,7 @@ export function PantallaLoginEmail() {
           onPress={() => navigate('register-email')}
         />
       </ScrollView>
+      <MensajeExito />
     </View>
   )
 }
@@ -130,5 +146,16 @@ const estilos = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: 20,
+  },
+  enlaceOlvide: {
+    alignSelf: 'flex-end',
+    marginTop: -8,
+    paddingVertical: 4,
+  },
+  textoOlvide: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: COLORES.verde600,
   },
 })

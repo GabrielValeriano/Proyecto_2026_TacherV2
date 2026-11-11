@@ -19,3 +19,13 @@ export function validarCredencialesRegistro(
   if (contra !== confirmacion) return 'Las contraseñas no coinciden.'
   return null
 }
+
+/** Cambio de contraseña: largo mínimo y que coincidan. Que no sea la anterior lo valida el backend. */
+export function validarNuevaContrasena(nueva: string, confirmacion: string): string | null {
+  if (!nueva || !confirmacion) return 'Completá los dos campos.'
+  if (nueva.length < LARGO_MINIMO_PASSWORD) {
+    return `La contraseña debe tener al menos ${LARGO_MINIMO_PASSWORD} caracteres.`
+  }
+  if (nueva !== confirmacion) return 'Las contraseñas no coinciden.'
+  return null
+}

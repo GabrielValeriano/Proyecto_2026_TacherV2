@@ -24,6 +24,9 @@ import { PantallaActualizarDNI } from '@/src/Pantallas/PantallaActualizarDNI'
 import { PantallaAjustes } from '@/src/Pantallas/PantallaAjustes'
 import { PantallaHistorialCanjes } from '@/src/Pantallas/PantallaHistorialCanjes'
 import { PantallaNotificaciones } from '@/src/Pantallas/PantallaNotificaciones'
+import { PantallaRecuperarEmail } from '@/src/Pantallas/PantallaRecuperarEmail'
+import { PantallaRecuperarCodigo } from '@/src/Pantallas/PantallaRecuperarCodigo'
+import { PantallaRecuperarContrasena } from '@/src/Pantallas/PantallaRecuperarContrasena'
 configurarGoogleSignIn()
 
 const PANTALLAS: Record<Pantalla, ComponentType> = {
@@ -47,6 +50,9 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'ajustes': PantallaAjustes,
   'historial-canjes': PantallaHistorialCanjes,
   notificaciones: PantallaNotificaciones,
+  'recuperar-email': PantallaRecuperarEmail,
+  'recuperar-codigo': PantallaRecuperarCodigo,
+  'recuperar-contrasena': PantallaRecuperarContrasena,
 }
 
 function PantallaActiva() {

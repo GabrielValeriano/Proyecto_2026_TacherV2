@@ -1,101 +1,85 @@
 import { useEffect, useRef, useState } from 'react'
-import { comprobarEmailVerificado, enviarCorreoDeVerificacion } from 'src/services/autenticacion'
-import { mensajeDeError } from 'src/utils/errores'
+import { useSegundosRestantes } from 'src/hooks/useSegundosRestantes'
+import { enviarCodigoRegistro, verificarCodigoRegistro } from 'src/services/verificacionRegistro'
 
-const INTERVALO_COMPROBACION_MS = 4000
 const ESPERA_REENVIO_SEGUNDOS = 60
 
+const enSegundos = (segundos: number) => new Date(Date.now() + segundos * 1000)
+
 /**
- * Verificación del correo con el link de Firebase: manda el correo al entrar,
- * comprueba cada pocos segundos si el usuario ya tocó el link y llama a `onVerificado`.
+ * Verificación del correo con un código de 8 dígitos: al entrar le pide al backend que mande
+ * el código (si el mail ya estaba verificado, llama a `onVerificado` de una), y `verificar`
+ * lo valida contra el backend.
  */
 export function useVerificacionCorreo(onVerificado: () => void) {
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
-  const [comprobando, setComprobando] = useState(false)
-  const [esperaReenvio, setEsperaReenvio] = useState(0)
+  const [enviando, setEnviando] = useState(true)
+  const [verificando, setVerificando] = useState(false)
+  const [puedeReenviarEn, setPuedeReenviarEn] = useState<Date | null>(null)
+  const esperaReenvio = useSegundosRestantes(puedeReenviarEn)
 
   const onVerificadoRef = useRef(onVerificado)
   onVerificadoRef.current = onVerificado
   const yaVerificado = useRef(false)
 
-  const enviarCorreo = async () => {
+  const terminar = () => {
+    if (yaVerificado.current) return
+    yaVerificado.current = true
+    onVerificadoRef.current()
+  }
+
+  /** `reenvio` = el usuario tocó "Reenviar": el código anterior deja de servir. */
+  const enviarCodigo = async (reenvio: boolean) => {
     setError('')
     setAviso('')
-    try {
-      await enviarCorreoDeVerificacion()
-      setAviso('Te enviamos el correo. Revisá también la carpeta de spam.')
-      setEsperaReenvio(ESPERA_REENVIO_SEGUNDOS)
-    } catch (err) {
-      setError(mensajeDeError(err, 'No se pudo enviar el correo de verificación.'))
+    setEnviando(true)
+    const resultado = await enviarCodigoRegistro()
+    setEnviando(false)
+
+    if (!resultado.ok) return setError(resultado.mensaje)
+    if (resultado.yaVerificado) return terminar()
+
+    setPuedeReenviarEn(enSegundos(resultado.segundosParaReenviar ?? ESPERA_REENVIO_SEGUNDOS))
+    if (resultado.enviado === false) {
+      setAviso('Ya te enviamos un código hace un momento. Revisá tu correo y la carpeta de spam.')
+    } else {
+      setAviso(
+        reenvio
+          ? 'Te enviamos un código nuevo. El anterior ya no sirve.'
+          : 'Te enviamos el código. Revisá también la carpeta de spam.',
+      )
     }
   }
 
-  /** `manual` = el usuario tocó el botón: ahí sí mostramos errores. */
-  const comprobar = async (manual: boolean) => {
-    if (yaVerificado.current) return
-    if (manual) {
-      setError('')
-      setComprobando(true)
-    }
+  // Al entrar se pide el código (o se sigue de largo si el correo ya estaba verificado)
+  useEffect(() => {
+    enviarCodigo(false)
+  }, [])
 
-    try {
-      if (await comprobarEmailVerificado()) {
-        yaVerificado.current = true
-        onVerificadoRef.current()
-      } else if (manual) {
-        setError('Todavía no verificaste tu correo. Abrí el link que te enviamos e intentá de nuevo.')
-      }
-    } catch (err) {
-      console.error('Error al comprobar la verificación del correo:', err)
-      if (manual) setError('No se pudo comprobar la verificación. Revisá tu conexión.')
-    } finally {
-      if (manual) setComprobando(false)
+  const verificar = async (codigo: string): Promise<boolean> => {
+    setError('')
+    setAviso('')
+    setVerificando(true)
+    const resultado = await verificarCodigoRegistro(codigo)
+    setVerificando(false)
+
+    if (!resultado.ok) {
+      setError(resultado.mensaje)
+      return false
     }
+    terminar()
+    return true
   }
-
-  // Al entrar: si ya estaba verificado seguimos de largo; si no, mandamos el correo
-  useEffect(() => {
-    let cancelado = false
-    ;(async () => {
-      try {
-        if (await comprobarEmailVerificado()) {
-          if (!cancelado && !yaVerificado.current) {
-            yaVerificado.current = true
-            onVerificadoRef.current()
-          }
-          return
-        }
-      } catch (err) {
-        console.error('Error al comprobar la verificación del correo:', err)
-      }
-      if (!cancelado) await enviarCorreo()
-    })()
-
-    return () => {
-      cancelado = true
-    }
-  }, [])
-
-  // Mientras la pantalla está abierta, comprueba cada pocos segundos
-  useEffect(() => {
-    const intervalo = setInterval(() => comprobar(false), INTERVALO_COMPROBACION_MS)
-    return () => clearInterval(intervalo)
-  }, [])
-
-  // Cuenta regresiva para poder volver a reenviar
-  useEffect(() => {
-    if (esperaReenvio <= 0) return
-    const temporizador = setTimeout(() => setEsperaReenvio((segundos) => segundos - 1), 1000)
-    return () => clearTimeout(temporizador)
-  }, [esperaReenvio])
 
   return {
     error,
     aviso,
-    comprobando,
+    enviando,
+    verificando,
     esperaReenvio,
-    reenviar: enviarCorreo,
-    comprobarAhora: () => comprobar(true),
+    limpiarError: () => setError(''),
+    reenviar: () => enviarCodigo(true),
+    verificar,
   }
 }

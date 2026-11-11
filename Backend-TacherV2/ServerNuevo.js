@@ -6,6 +6,7 @@ const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { notificarUsuario } = require('./notificaciones');
 const { registrarRutasRecuperacion } = require('./recuperacion');
+const { registrarRutasVerificacionRegistro } = require('./verificacionRegistro');
 
 const app = express();
 app.use(cors());
@@ -23,8 +24,9 @@ const serviceAccount = {
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
-// Recuperación de contraseña con código de 8 dígitos (la usa la app)
+// Códigos de 8 dígitos por mail (los usa la app): recuperar contraseña y verificar el registro
 registrarRutasRecuperacion(app, db);
+registrarRutasVerificacionRegistro(app, db);
 
 // Endpoint de prueba de salud
 app.get('/', (req, res) => {

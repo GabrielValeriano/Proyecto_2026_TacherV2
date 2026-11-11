@@ -1,7 +1,8 @@
-import React from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { MailCheck } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
+import { CampoCodigo } from 'src/components/CampoCodigo'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { TituloDePantalla } from 'src/components/TituloDePantalla'
@@ -11,20 +12,39 @@ import { useVolverAlRegistro } from 'src/hooks/useVolverAlRegistro'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 import { COLORES, SOMBRAS } from 'src/theme'
 
+const LARGO_CODIGO = 8
+
+/** Registro, paso 2: el usuario ingresa el código de 8 dígitos que le llegó por mail. */
 export function PantallaVerificacionCodigo() {
   const { navigate, flowData } = useApp()
-  const { error, aviso, comprobando, esperaReenvio, reenviar, comprobarAhora } =
+  const [codigo, setCodigo] = useState('')
+  const { error, aviso, enviando, verificando, esperaReenvio, limpiarError, reenviar, verificar } =
     useVerificacionCorreo(() => navigate('confirm-scan'))
   const { volverAlRegistro, saliendo } = useVolverAlRegistro()
 
-  const puedeReenviar = esperaReenvio === 0
+  const completo = codigo.length === LARGO_CODIGO
+  const puedeReenviar = esperaReenvio === 0 && !enviando
+
+  const handleCambiarCodigo = (valor: string) => {
+    setCodigo(valor)
+    if (error) limpiarError()
+  }
+
+  const handleSiguiente = () => {
+    if (completo) verificar(codigo)
+  }
+
+  const handleReenviar = async () => {
+    setCodigo('')
+    await reenviar()
+  }
 
   if (saliendo) return <PantallaCarga mensaje="Volviendo al registro…" />
 
   return (
     <View style={estilos.pantalla}>
       <ScreenHeader title="Verificá tu correo" onBack={volverAlRegistro} />
-      <View style={estilos.contenido}>
+      <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
         <View style={estilos.formulario}>
           <View style={estilos.icono}>
             <MailCheck size={40} strokeWidth={1.75} color={COLORES.verde} />
@@ -33,35 +53,46 @@ export function PantallaVerificacionCodigo() {
           <TituloDePantalla texto="Revisá tu correo" />
 
           <Text style={estilos.descripcion}>
-            Te enviamos un link de verificación a{' '}
-            <Text style={estilos.correoDestino}>{flowData.email}</Text>. Abrilo y volvé a la app:
-            el siguiente paso se abre solo.
+            Te enviamos un código de {LARGO_CODIGO} dígitos a{' '}
+            <Text style={estilos.correoDestino}>{flowData.email}</Text>. Vence en 10 minutos.
           </Text>
+
+          <CampoCodigo
+            valor={codigo}
+            onCambiar={handleCambiarCodigo}
+            largo={LARGO_CODIGO}
+            error={error !== ''}
+          />
 
           <MensajeError message={error} />
           {aviso !== '' && error === '' && <Text style={estilos.aviso}>{aviso}</Text>}
 
           <BotonPrimario
-            label="Ya verifiqué mi correo"
-            onPress={comprobarAhora}
-            loading={comprobando}
+            label="Siguiente"
+            onPress={handleSiguiente}
+            loading={verificando}
+            disabled={!completo}
           />
 
           <TouchableOpacity
             activeOpacity={0.7}
             disabled={!puedeReenviar}
-            onPress={reenviar}
+            onPress={handleReenviar}
             style={estilos.enlaceReenviar}
           >
             <Text style={estilos.textoReenviar}>
               ¿No te llegó?{' '}
               <Text style={puedeReenviar ? estilos.textoReenviarAccion : estilos.textoReenviarEspera}>
-                {puedeReenviar ? 'Reenviar correo' : `Reenviar en ${esperaReenvio}s`}
+                {enviando
+                  ? 'Enviando…'
+                  : esperaReenvio > 0
+                    ? `Reenviar en ${esperaReenvio}s`
+                    : 'Reenviar código'}
               </Text>
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </View>
   )
 }
@@ -72,10 +103,10 @@ const estilos = StyleSheet.create({
     backgroundColor: COLORES.blanco,
   },
   contenido: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingVertical: 32,
   },
   formulario: {
     gap: 16,

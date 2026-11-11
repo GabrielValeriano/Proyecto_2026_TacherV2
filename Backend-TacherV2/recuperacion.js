@@ -10,49 +10,24 @@
 const crypto = require('crypto');
 const { getAuth } = require('firebase-admin/auth');
 const { Timestamp } = require('firebase-admin/firestore');
+const {
+  EMAILJS,
+  hash,
+  normalizarEmail,
+  generarCodigo,
+  esCodigoValido,
+  igualesSeguro,
+  responderError: error,
+  enviarMailConCodigo,
+  mensajeCodigoIncorrecto,
+} = require('./codigosPorMail');
 
 const MINUTOS_VALIDEZ_CODIGO = 10;
 const MINUTOS_VALIDEZ_TOKEN = 10;
 const SEGUNDOS_ENTRE_ENVIOS = 60;
 const INTENTOS_MAXIMOS = 5;
 const LARGO_MINIMO_PASSWORD = 8;
-
-// Mismos datos de EmailJS que usa la app (src/config.ts). Se pueden cambiar desde el .env.
-const EMAILJS = {
-  url: 'https://api.emailjs.com/api/v1.0/email/send',
-  serviceId: process.env.EMAILJS_SERVICE_ID || 'service_zbwfi2e',
-  templateId: process.env.EMAILJS_TEMPLATE_RECUPERACION || 'template_nsfs7b1',
-  publicKey: process.env.EMAILJS_PUBLIC_KEY || 'qPBhMhwXdDurztFHm',
-};
-
-const hash = (texto) => crypto.createHash('sha256').update(texto).digest('hex');
-const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
-const generarCodigo = () => crypto.randomInt(0, 100000000).toString().padStart(8, '0');
-
-function igualesSeguro(a, b) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
-}
-
-const error = (res, status, mensaje) => res.status(status).json({ exito: false, mensaje });
-
-async function enviarMailConCodigo(email, codigo) {
-  const respuesta = await fetch(EMAILJS.url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
-    body: JSON.stringify({
-      service_id: EMAILJS.serviceId,
-      template_id: EMAILJS.templateId,
-      user_id: EMAILJS.publicKey,
-      ...(process.env.EMAILJS_PRIVATE_KEY ? { accessToken: process.env.EMAILJS_PRIVATE_KEY } : {}),
-      template_params: { to_email: email, code: codigo },
-    }),
-  });
-  if (!respuesta.ok) {
-    throw new Error(`EmailJS respondió ${respuesta.status}: ${await respuesta.text()}`);
-  }
-}
+const TEMPLATE_RECUPERACION = process.env.EMAILJS_TEMPLATE_RECUPERACION || EMAILJS.templateId;
 
 /**
  * ¿La contraseña nueva es la misma que la actual? Firebase no deja leer contraseñas,
@@ -117,7 +92,7 @@ function registrarRutasRecuperacion(app, db) {
       }
 
       const codigo = generarCodigo();
-      await enviarMailConCodigo(email, codigo);
+      await enviarMailConCodigo(email, codigo, TEMPLATE_RECUPERACION);
       await ref.set({
         Uid: usuario.uid,
         CodigoHash: hash(codigo),
@@ -138,7 +113,7 @@ function registrarRutasRecuperacion(app, db) {
     try {
       const email = normalizarEmail(req.body?.email);
       const codigo = String(req.body?.codigo || '').trim();
-      if (!/^\d{8}$/.test(codigo)) return error(res, 400, 'Ingresá los 8 dígitos del código.');
+      if (!esCodigoValido(codigo)) return error(res, 400, 'Ingresá los 8 dígitos del código.');
 
       const ref = recuperacionRef(email);
       const snap = await ref.get();
@@ -156,13 +131,7 @@ function registrarRutasRecuperacion(app, db) {
       if (!igualesSeguro(hash(codigo), datos.CodigoHash)) {
         const restantes = INTENTOS_MAXIMOS - datos.Intentos - 1;
         await ref.update({ Intentos: datos.Intentos + 1 });
-        return error(
-          res,
-          400,
-          restantes > 0
-            ? `El código es incorrecto. Te quedan ${restantes} ${restantes === 1 ? 'intento' : 'intentos'}.`
-            : 'El código es incorrecto. Superaste la cantidad de intentos: pedí uno nuevo.',
-        );
+        return error(res, 400, mensajeCodigoIncorrecto(restantes));
       }
 
       // Código correcto: se cambia por un token de un solo uso para el paso final

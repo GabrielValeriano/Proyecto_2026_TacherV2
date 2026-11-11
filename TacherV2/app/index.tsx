@@ -23,6 +23,7 @@ import { PantallaDatosYCondiciones } from '@/src/Pantallas/PantallaDatosYCondici
 import { PantallaActualizarDNI } from '@/src/Pantallas/PantallaActualizarDNI'
 import { PantallaAjustes } from '@/src/Pantallas/PantallaAjustes'
 import { PantallaHistorialCanjes } from '@/src/Pantallas/PantallaHistorialCanjes'
+import { PantallaNotificaciones } from '@/src/Pantallas/PantallaNotificaciones'
 configurarGoogleSignIn()
 
 const PANTALLAS: Record<Pantalla, ComponentType> = {
@@ -45,6 +46,7 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'cambiar-dni': PantallaActualizarDNI,
   'ajustes': PantallaAjustes,
   'historial-canjes': PantallaHistorialCanjes,
+  notificaciones: PantallaNotificaciones,
 }
 
 function PantallaActiva() {

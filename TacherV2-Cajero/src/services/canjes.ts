@@ -1,5 +1,6 @@
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { db } from 'src/firebase'
+import { enviarPush } from 'src/services/push'
 
 export type ResultadoCanje =
   | { ok: true; producto: string; cliente: string; puntos: number }
@@ -31,14 +32,25 @@ function mensajeDeFirestore(error: unknown): string {
  *  - le descuenta al cliente los puntos del producto
  * Si dos cajeros escanean el mismo QR a la vez, solo uno lo consigue.
  */
+/** Lo que devuelve la transacción: el resultado más los datos para avisarle al cliente. */
+type ResultadoInterno =
+  | { ok: false; mensaje: string }
+  | {
+      ok: true
+      resultado: Extract<ResultadoCanje, { ok: true }>
+      tokensCliente: string[]
+      aviso: { titulo: string; mensaje: string }
+    }
+
 export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
   const id = codigo.trim()
   if (!ID_DE_CANJE.test(id)) {
     return { ok: false, mensaje: 'Este QR no es un canje de TeacherV2.' }
   }
 
+  let interno: ResultadoInterno
   try {
-    return await runTransaction(db, async (transaccion): Promise<ResultadoCanje> => {
+    interno = await runTransaction(db, async (transaccion): Promise<ResultadoInterno> => {
       const canjeRef = doc(db, 'CANJES', id)
       const canjeSnap = await transaccion.get(canjeRef)
       if (!canjeSnap.exists()) {
@@ -72,7 +84,8 @@ export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
         return { ok: false, mensaje: 'No se encontró la cuenta del cliente.' }
       }
 
-      const puntosDelCliente = Number(clienteSnap.data().Puntos) || 0
+      const cliente = clienteSnap.data()
+      const puntosDelCliente = Number(cliente.Puntos) || 0
       if (puntosDelCliente < puntosDelCanje) {
         return { ok: false, mensaje: 'Al cliente no le alcanzan los puntos para este canje.' }
       }
@@ -86,14 +99,38 @@ export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
         UltimoCanje: id,
       })
 
+      // La notificación se guarda en la misma transacción: si el canje no se confirma, no hay aviso
+      const producto = String(canje.Producto ?? 'Producto')
+      const aviso = {
+        titulo: 'Canje confirmado',
+        mensaje: `Retiraste ${producto} por ${puntosDelCanje} puntos. ¡Gracias por reciclar!`,
+      }
+      transaccion.set(doc(collection(clienteRef, 'NOTIFICACIONES')), {
+        Tipo: 'canje',
+        Titulo: aviso.titulo,
+        Mensaje: aviso.mensaje,
+        Fecha: serverTimestamp(),
+        Leida: false,
+      })
+
       return {
         ok: true,
-        producto: String(canje.Producto ?? 'Producto'),
-        cliente: String(canje.Usuario ?? 'Cliente'),
-        puntos: puntosDelCanje,
+        resultado: {
+          ok: true,
+          producto,
+          cliente: String(canje.Usuario ?? 'Cliente'),
+          puntos: puntosDelCanje,
+        },
+        tokensCliente: Array.isArray(cliente.ExpoPushTokens) ? cliente.ExpoPushTokens : [],
+        aviso,
       }
     })
   } catch (error) {
     return { ok: false, mensaje: mensajeDeFirestore(error) }
   }
+
+  if (!interno.ok) return interno
+  // Sin await: el cajero ve el resultado al instante, el push sale en segundo plano
+  enviarPush(interno.tokensCliente, interno.aviso)
+  return interno.resultado
 }

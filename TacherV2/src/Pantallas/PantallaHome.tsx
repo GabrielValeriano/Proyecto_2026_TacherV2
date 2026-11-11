@@ -1,15 +1,14 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { BookOpen, ChevronRight, Gift, LogOut, Recycle } from 'lucide-react-native'
+import { BookOpen, ChevronRight, Gift, Recycle } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { BotonPrimario } from 'src/components/BotonPrimario'
-import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
 import { Encabezado } from 'src/components/Encabezado'
 import { useApp } from 'src/context/AppContext'
 import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useSincronizarRango } from 'src/hooks/useSincronizarRango'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 
 function Saludo({ nombre }: { nombre: string }) {
   return (
@@ -96,7 +95,7 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
         </View>
         <View>
           <Text style={estilos.accesoTitulo}>Instrucciones</Text>
-          <Text style={estilos.accesoSubtitulo}>Aprendé a usar TeacherV2</Text>
+          <Text style={estilos.accesoSubtitulo}>Aprendé a usar TacherV2</Text>
         </View>
       </View>
       <ChevronRight size={22} color={COLORES.principal} />
@@ -104,17 +103,8 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
   )
 }
 
-function BotonCerrarSesion({ onPress }: { onPress: () => void }) {
-  return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={estilos.cerrarSesion}>
-      <LogOut size={22} color={COLORES.rojo600} />
-      <Text style={estilos.cerrarSesionTexto}>Cerrar sesión</Text>
-    </TouchableOpacity>
-  )
-}
-
 export function PantallaHome() {
-  const { userData, navigate, abrirEnDesarrollo, cerrarSesion } = useApp()
+  const { userData, navigate, cerrarSesion } = useApp()
   const handleTabPress = useNavegacionPestañas()
 
   const puntos = Number(userData?.Puntos) || 0
@@ -137,7 +127,7 @@ export function PantallaHome() {
         <TarjetaReciclajes reciclajes={reciclajes} onVerReciclajes={() => navigate('historial-reciclajes')} />
 
 
-        <AccesoInstrucciones onPress={() => abrirEnDesarrollo('Instrucciones')} />
+        <AccesoInstrucciones onPress={() => navigate('instrucciones')} />
 
       </ScrollView>
 
@@ -330,11 +320,12 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
     padding: 16,
+    ...SOMBRAS.chica,
   },
   accesoIzquierda: {
     flexDirection: 'row',
@@ -359,22 +350,5 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     color: COLORES.textoSuave,
-  },
-  cerrarSesion: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORES.rojo300,
-    backgroundColor: COLORES.rojo50,
-  },
-  cerrarSesionTexto: {
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: COLORES.rojo600,
   },
 })

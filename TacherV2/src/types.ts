@@ -22,6 +22,8 @@ export type Pantalla =
   | 'recuperar-email'
   | 'recuperar-codigo'
   | 'recuperar-contrasena'
+  | 'instrucciones'
+  | 'informacion'
 
 export type ProveedorAuth = 'email' | 'google.com'
 
@@ -34,6 +36,8 @@ export interface Usuario {
   FechaRegistro: string
   Puntos: number
   Rango: string
+  /** Cantidad de reciclajes: la suma la caja (ServerNuevo.js). De acá sale el rango. */
+  reciclajes?: number
 }
 
 /** Datos que se van acumulando a lo largo del flujo de registro. */
@@ -48,6 +52,8 @@ export interface FlowData {
 
 export interface AppContextValue {
   pantallaActual: Pantalla
+  /** La pantalla desde la que se llegó a la actual (para los "volver" que dependen del origen). */
+  pantallaAnterior: Pantalla | null
   seccionEnDesarrollo: string
   userData: Usuario | null
   flowData: FlowData

@@ -27,6 +27,8 @@ import { PantallaNotificaciones } from '@/src/Pantallas/PantallaNotificaciones'
 import { PantallaRecuperarEmail } from '@/src/Pantallas/PantallaRecuperarEmail'
 import { PantallaRecuperarCodigo } from '@/src/Pantallas/PantallaRecuperarCodigo'
 import { PantallaRecuperarContrasena } from '@/src/Pantallas/PantallaRecuperarContrasena'
+import { PantallaInstrucciones } from '@/src/Pantallas/PantallaInstrucciones'
+import { PantallaInformacion } from '@/src/Pantallas/PantallaInformacion'
 configurarGoogleSignIn()
 
 const PANTALLAS: Record<Pantalla, ComponentType> = {
@@ -53,6 +55,8 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'recuperar-email': PantallaRecuperarEmail,
   'recuperar-codigo': PantallaRecuperarCodigo,
   'recuperar-contrasena': PantallaRecuperarContrasena,
+  instrucciones: PantallaInstrucciones,
+  informacion: PantallaInformacion,
 }
 
 function PantallaActiva() {

@@ -16,7 +16,13 @@ import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
 import { actualizarNombreAuth, cambiarContrasenaActual } from 'src/services/autenticacion'
 import { actualizarNombreUsuario } from 'src/services/usuarios'
-import { COLORES, SOMBRAS } from 'src/theme'
+import {
+  LARGO_MAXIMO_NOMBRE,
+  LARGO_MINIMO_NOMBRE,
+  limpiarNombreUsuario,
+  validarNombreUsuario,
+} from 'src/domain/nombreUsuario'
+import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 
 interface SeccionDesplegableProps {
   icono: LucideIcon
@@ -97,13 +103,15 @@ export function PantallaAjustes() {
 
   const handleGuardarNombre = async () => {
     setErrorNombre('')
-    const nombreLimpio = nuevoNombre.trim().replace(/\s+/g, ' ')
+    const nombreLimpio = limpiarNombreUsuario(nuevoNombre)
     if (!userData?.id) {
       setErrorNombre('No se encontró tu usuario.')
       return
     }
-    if (!nombreLimpio) {
-      setErrorNombre('Ingresá un nombre de usuario válido.')
+    // Se valida antes de mandar nada a Firestore
+    const errorDeNombre = validarNombreUsuario(nombreLimpio)
+    if (errorDeNombre) {
+      setErrorNombre(errorDeNombre)
       return
     }
     if (nombreLimpio === userData.Nombre) {
@@ -192,7 +200,7 @@ export function PantallaAjustes() {
           <Text style={estilos.ayuda}>Tu nombre actual: @{userData?.Nombre || 'Usuario'}</Text>
           <CampoInput
             label="Nuevo nombre de usuario"
-            placeholder="Ingresá el nuevo nombre"
+            placeholder={`De ${LARGO_MINIMO_NOMBRE} a ${LARGO_MAXIMO_NOMBRE} caracteres`}
             value={nuevoNombre}
             onChangeText={(texto) => {
               setNuevoNombre(texto)
@@ -296,7 +304,7 @@ const estilos = StyleSheet.create({
 
   // --- Secciones
   seccion: {
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,

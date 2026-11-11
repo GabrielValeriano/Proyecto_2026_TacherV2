@@ -7,11 +7,16 @@ import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { TituloDePantalla } from 'src/components/TituloDePantalla'
 import { useApp } from 'src/context/AppContext'
+import {
+  LARGO_MAXIMO_NOMBRE,
+  LARGO_MINIMO_NOMBRE,
+  limpiarNombreUsuario,
+  validarNombreUsuario,
+} from 'src/domain/nombreUsuario'
 import { useErrorDeFormulario } from 'src/hooks/useErrorDeFormulario'
 import { obtenerUidActual } from 'src/services/autenticacion'
 import { registrarPerfil } from 'src/services/usuarios'
 import { COLORES } from 'src/theme'
-import { mensajeDeError } from 'src/utils/errores'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaRegisterUsername() {
@@ -22,9 +27,11 @@ export function PantallaRegisterUsername() {
 
   const handleCompletarRegistro = async () => {
     setError('')
-    const nombreLimpio = nombre.trim()
+    const nombreLimpio = limpiarNombreUsuario(nombre)
 
-    if (!nombreLimpio) return setError('Por favor ingresá un nombre de usuario.')
+    // Se valida antes de mandar nada a Firestore
+    const errorDeNombre = validarNombreUsuario(nombreLimpio)
+    if (errorDeNombre) return setError(errorDeNombre)
 
     setLoading(true)
     try {
@@ -37,7 +44,7 @@ export function PantallaRegisterUsername() {
       navigate('home')
     } catch (err) {
       console.error('Error al registrar en Firebase:', err)
-      setError('No se pudo completar el registro: ' + mensajeDeError(err, 'Error del servidor'))
+      setError('No pudimos completar el registro. Revisá tu conexión e intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -54,7 +61,7 @@ export function PantallaRegisterUsername() {
 
           <CampoInput
             label="Elige tu nombre"
-            placeholder="Ingresá tu nombre o apodo"
+            placeholder={`Tu apodo (${LARGO_MINIMO_NOMBRE} a ${LARGO_MAXIMO_NOMBRE} caracteres)`}
             value={nombre}
             onChangeText={limpiarAlEditar(setNombre)}
             icon={<User size={16} color={COLORES.verde} />}

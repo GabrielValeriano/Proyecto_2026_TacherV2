@@ -1,8 +1,21 @@
-import React from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useCameraPermissions } from 'expo-camera'
 import { BookOpen, ChevronRight, QrCode } from 'lucide-react-native'
 import { Banner } from 'src/components/Banner'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { CirculoMarca } from 'src/components/CirculoMarca'
+import { MarcaTacherV2, TacherV2Logo } from 'src/components/TacherV2Logo'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 interface Props {
   onInstrucciones: () => void
@@ -11,14 +24,20 @@ interface Props {
 
 function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={estilos.acceso}>
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      style={estilos.acceso}
+      accessibilityRole="button"
+      accessibilityLabel="Instrucciones: cómo usar TacherV2 como cajero"
+    >
       <View style={estilos.accesoIzquierda}>
         <View style={estilos.accesoIcono}>
           <BookOpen size={24} color={COLORES.principal} />
         </View>
         <View style={estilos.accesoTextos}>
           <Text style={estilos.accesoTitulo}>Instrucciones</Text>
-          <Text style={estilos.accesoSubtitulo}>Cómo usar TeacherV2 como cajero</Text>
+          <Text style={estilos.accesoSubtitulo}>Cómo usar TacherV2 como cajero</Text>
         </View>
       </View>
       <ChevronRight size={22} color={COLORES.principal} />
@@ -26,40 +45,88 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
   )
 }
 
-function BotonEscanear({ onPress }: { onPress: () => void }) {
+const TAMANIO_BOTON = 176
+const RADIO_BOTON = RADIOS.tarjeta
+
+/** La acción principal del cajero: un cuadrado grande y centrado con el degradé de la marca. */
+function BotonEscanear({ onPress, cargando }: { onPress: () => void; cargando: boolean }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={estilos.botonEscanear}>
-      <View style={estilos.botonEscanearIcono}>
-        <QrCode size={30} color={COLORES.blanco} />
+    <Pressable
+      onPress={onPress}
+      disabled={cargando}
+      accessibilityRole="button"
+      accessibilityLabel="Escanear QR del cliente"
+      accessibilityState={{ busy: cargando }}
+      style={({ pressed }) => [estilos.botonEscanear, pressed && estilos.botonEscanearPresionado]}
+    >
+      <View style={estilos.botonEscanearAnillo}>
+        <CirculoMarca size={TAMANIO_BOTON} radio={RADIO_BOTON}>
+          {cargando ? (
+            <ActivityIndicator size="large" color={COLORES.blanco} />
+          ) : (
+            <QrCode size={72} strokeWidth={1.75} color={COLORES.blanco} />
+          )}
+        </CirculoMarca>
       </View>
       <Text style={estilos.botonEscanearTexto}>Escanear QR</Text>
-    </TouchableOpacity>
+      <Text style={estilos.botonEscanearAyuda}>Tocá para abrir la cámara</Text>
+    </Pressable>
   )
 }
 
 export function PantallaInicio({ onInstrucciones, onEscanear }: Props) {
+  const [permiso, pedirPermiso] = useCameraPermissions()
+  const [pidiendo, setPidiendo] = useState(false)
+
+  // Sin pantalla intermedia: el permiso del sistema aparece al tocar el botón,
+  // y si lo acepta se abre directo la cámara
+  const handleEscanear = async () => {
+    if (permiso?.granted) return onEscanear()
+
+    setPidiendo(true)
+    const respuesta = await pedirPermiso()
+    setPidiendo(false)
+    if (respuesta.granted) return onEscanear()
+
+    if (respuesta.canAskAgain) {
+      Alert.alert('Permiso requerido', 'Necesitamos la cámara para leer el QR del cliente.')
+    } else {
+      // Lo rechazó con "no volver a preguntar": solo se puede activar desde los ajustes
+      Alert.alert(
+        'Cámara desactivada',
+        'Activá el permiso de cámara para TacherV2 en los ajustes del teléfono.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir ajustes', onPress: () => Linking.openSettings() },
+        ],
+      )
+    }
+  }
+
   return (
     <View style={estilos.pantalla}>
       <Banner />
 
       <ScrollView contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false}>
-        {/* Bloque central animado / llamativo */}
-        <View style={estilos.contenedorHero}>
-          <Text style={estilos.preTit}>¡BIENVENIDO, CAJERO!</Text>
-          <Text style={estilos.tituloPrincipal}>
-            TACHER<Text style={estilos.tituloMarca}>V2</Text>
-          </Text>
-          <Text style={estilos.subtituloCorto}>
-            Validá QRs, descontá puntos y entregá premios al instante.
-          </Text>
+        <View style={estilos.hero}>
+          <TacherV2Logo size={112} halo />
+          <View style={estilos.heroTextos}>
+            <Text style={estilos.saludo}>¡Bienvenido, cajero!</Text>
+            <View accessibilityRole="header">
+              <MarcaTacherV2 tamanio={40} />
+            </View>
+            <Text style={estilos.descripcion}>
+              Validá los QR de canje, descontá los puntos y entregá los premios al instante.
+            </Text>
+          </View>
         </View>
 
-        <AccesoInstrucciones onPress={onInstrucciones} />
+        {/* Instrucciones y, justo debajo y centrado, el botón de escanear */}
+        <View style={estilos.acciones}>
+          <AccesoInstrucciones onPress={onInstrucciones} />
+          <BotonEscanear onPress={handleEscanear} cargando={pidiendo} />
+        </View>
       </ScrollView>
-
-      <View style={estilos.pie}>
-        <BotonEscanear onPress={onEscanear} />
-      </View>
     </View>
   )
 }
@@ -71,42 +138,41 @@ const estilos = StyleSheet.create({
   },
   contenido: {
     flexGrow: 1,
-    justifyContent: 'center', // Ayuda a ubicarlo visualmente bien en el centro vertical de la pantalla disponible
-    gap: 24,
+    justifyContent: 'center',
+    gap: 32,
     paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 24,
-    paddingTop: 10,
   },
-  contenedorHero: {
+
+  // --- Marca
+  hero: {
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 24,
   },
-  preTit: {
-    fontSize: 30,
+  heroTextos: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  saludo: {
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '800',
-    letterSpacing: 3,
-    color: COLORES.principal,
-    marginBottom: 15,
-  },
-  tituloPrincipal: {
-    textAlign: 'center',
-    fontSize: 90,
-    fontFamily: 'sans-serif-condensed',
-    lineHeight: 65,
-    fontWeight: '900',
-    letterSpacing: -1.5,
-    color: COLORES.texto,
-  },
-  tituloMarca: {
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
     color: COLORES.principal,
   },
-  subtituloCorto: {
+  descripcion: {
+    maxWidth: 320,
+    marginTop: 4,
     textAlign: 'center',
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
     color: COLORES.textoSuave,
-    marginTop: 30,
-    paddingHorizontal: 10,
+  },
+
+  acciones: {
+    gap: 24,
   },
 
   // --- Acceso a las instrucciones
@@ -115,12 +181,12 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
     padding: 16,
-    ...SOMBRAS.media, // Opcional, le da más relieve si usas sombras
+    ...SOMBRAS.media,
   },
   accesoIzquierda: {
     flex: 1,
@@ -133,54 +199,53 @@ const estilos = StyleSheet.create({
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: RADIOS.medio,
     backgroundColor: COLORES.suave,
   },
   accesoTextos: {
     flex: 1,
   },
   accesoTitulo: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '600',
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '700',
     color: COLORES.texto,
   },
   accesoSubtitulo: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 19,
     color: COLORES.textoSuave,
   },
 
-  // --- Zona fija de abajo
-  pie: {
-    gap: 4,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    paddingTop: 8,
-  },
+  // --- Botón de escanear: grande y centrado debajo de las instrucciones
   botonEscanear: {
-    height: 88,
-    flexDirection: 'row',
+    alignSelf: 'stretch',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    borderRadius: 26,
-    backgroundColor: COLORES.principal,
-    ...SOMBRAS.media,
+    gap: 6,
+    paddingVertical: 4,
   },
-  botonEscanearIcono: {
-    width: 52,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+  botonEscanearPresionado: {
+    opacity: 0.9,
+    transform: [{ scale: 0.96 }],
+  },
+  botonEscanearAnillo: {
+    marginBottom: 8,
+    borderRadius: RADIO_BOTON + 10,
+    borderWidth: 10,
+    borderColor: 'rgba(38,130,87,0.10)',
   },
   botonEscanearTexto: {
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    color: COLORES.blanco,
+    textAlign: 'center',
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    color: COLORES.texto,
+  },
+  botonEscanearAyuda: {
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 19,
+    color: COLORES.textoSuave,
   },
 })

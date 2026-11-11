@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { AlertCircle } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { ScreenHeader } from 'src/components/ScreenHeader'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 const PASOS = [
   'Pedile al cliente que abra el producto que quiere canjear y toque “Generar QR”.',
@@ -61,7 +61,7 @@ export function PantallaInstrucciones({ onVolver }: { onVolver: () => void }) {
           {SI_ALGO_FALLA.map(({ titulo, texto }) => (
             <View key={titulo} style={estilos.tarjetaProblema}>
               <View style={estilos.problemaHeader}>
-                <AlertCircle size={20} color={COLORES.principal} />
+                <AlertCircle size={20} color={COLORES.avisoOscuro} />
                 <Text style={estilos.problemaTitulo}>{titulo}</Text>
               </View>
               <Text style={estilos.problemaTexto}>{texto}</Text>
@@ -93,15 +93,16 @@ const estilos = StyleSheet.create({
     gap: 2,
   },
   preTitulo: {
-    fontSize: 20,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '800',
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     color: COLORES.principal,
   },
   // Título estándar (sin sans-serif-condensed) pero manteniendo la fuerza visual
   titulo: {
-    fontSize: 25,
-    lineHeight: 40,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: '800',
     letterSpacing: -0.5,
     color: COLORES.texto,
@@ -109,7 +110,7 @@ const estilos = StyleSheet.create({
 
   // --- Estilos Timeline / Pasos (Recuperado el diseño con SOMBRAS y Badge de color)
   tarjetaPasos: {
-    borderRadius: 24,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
@@ -129,18 +130,18 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
-    backgroundColor: COLORES.principal,
+    backgroundColor: COLORES.oscuro,
   },
   numeroTexto: {
     fontSize: 16,
     lineHeight: 20,
     fontWeight: '800',
-    color: COLORES.blanco,
+    color: COLORES.acento,
   },
   lineaConectora: {
     width: 2,
     flex: 1,
-    backgroundColor: COLORES.suave,
+    backgroundColor: COLORES.verde200,
     marginVertical: 4,
   },
   contenidoPaso: {
@@ -161,14 +162,11 @@ const estilos = StyleSheet.create({
   },
   tarjetaProblema: {
     gap: 6,
-    borderRadius: 18,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
-    borderColor: COLORES.linea,
-    backgroundColor: COLORES.blanco,
+    borderColor: COLORES.aviso200,
+    backgroundColor: COLORES.aviso50,
     padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORES.principal,
-    ...SOMBRAS.media,
   },
   problemaHeader: {
     flexDirection: 'row',
@@ -178,13 +176,13 @@ const estilos = StyleSheet.create({
   problemaTitulo: {
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '700',
-    color: COLORES.texto,
+    fontWeight: '800',
+    color: COLORES.avisoOscuro,
   },
   problemaTexto: {
     fontSize: 14,
     lineHeight: 20,
-    color: COLORES.textoSuave,
+    color: COLORES.gris700,
   },
 
   // --- Pie fijo

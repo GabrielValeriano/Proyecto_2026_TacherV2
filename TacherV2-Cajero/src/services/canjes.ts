@@ -45,7 +45,7 @@ type ResultadoInterno =
 export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
   const id = codigo.trim()
   if (!ID_DE_CANJE.test(id)) {
-    return { ok: false, mensaje: 'Este QR no es un canje de TeacherV2.' }
+    return { ok: false, mensaje: 'Este QR no es un canje de TacherV2.' }
   }
 
   let interno: ResultadoInterno

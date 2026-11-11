@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
+const { notificarUsuario } = require('./notificaciones');
 
 const app = express();
 app.use(cors());
@@ -160,7 +161,8 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
       return res.status(404).json({ exito: false, codigo_error: 2001, mensaje: 'Residuo no encontrado' });
     }
 
-    const residuoData = residuoSnap.docs[0].data();
+    const residuoDoc = residuoSnap.docs[0];
+    const residuoData = residuoDoc.data();
     const puntosGanados = Number(residuoData.Puntos_valor) || 0;
     const nombreResiduo = residuoData.Nombre || 'Residuo';
 
@@ -174,18 +176,29 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
     const usuarioActualizadoSnap = await usuarioDoc.ref.get();
     const puntosTotalesReales = usuarioActualizadoSnap.data().Puntos || 0;
 
-    // 5. Registrar el historial en la colección 'RECICLAJES' (sin duplicar campos innecesarios)
+    // 5. Registrar el historial en la colección 'RECICLAJES'.
+    //    Los nombres de los campos tienen que coincidir con los que lee la app
+    //    (CAMPOS en TacherV2/src/services/reciclajes.ts): la app filtra por 'Uid' y ordena por 'Fecha'.
     await db.collection('RECICLAJES').add({
-      uid: usuarioDoc.id,
-      nombre_usuario: nombreUsuario,
-      dni: dniString,
-      residuo: nombreResiduo,
-      codigo_barras: codigoString,
-      puntos_ganados: puntosGanados,
-      fecha: Timestamp.now()
+      Uid: usuarioDoc.id,
+      Usuario: nombreUsuario,
+      DNI: dniString,
+      Residuo: nombreResiduo,
+      ResiduoId: residuoDoc.id,
+      ...(residuoData.Categoria ? { Categoria: residuoData.Categoria } : {}),
+      CodigoBarras: codigoString,
+      PuntosGanados: puntosGanados,
+      Fecha: Timestamp.now()
     });
 
-    // 6. Devolver a la ESP32 los puntos ganados y el total leídos directo de USUARIOS
+    // 6. Aviso en la app (pantalla Notificaciones + push). Sin await: no demora la respuesta a la ESP32
+    notificarUsuario(db, usuarioDoc.ref, usuarioActualizadoSnap.data(), {
+      tipo: 'reciclaje',
+      titulo: '¡Reciclaje registrado!',
+      mensaje: `Reciclaste ${nombreResiduo} y sumaste ${puntosGanados} puntos. Ahora tenés ${puntosTotalesReales}.`
+    });
+
+    // 7. Devolver a la ESP32 los puntos ganados y el total leídos directo de USUARIOS
     return res.status(200).json({
       exito: true,
       puntos_ganados: puntosGanados,

@@ -1,13 +1,11 @@
 import React, { useMemo } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { Recycle } from 'lucide-react-native'
-import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { EsqueletoReciclajes } from 'src/components/EsqueletoReciclajes'
 import { ItemHistorialReciclaje } from 'src/components/ItemHistorialReciclaje'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
-import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useReciclajesPaginado } from 'src/hooks/useReciclajesPaginado'
 import { COLORES, SOMBRAS } from 'src/theme'
 import type { Reciclaje } from 'src/services/reciclajes'
@@ -63,7 +61,6 @@ function PieCargandoMas({ visible }: { visible: boolean }) {
 
 export function PantallaHistorialReciclajes() {
   const { userData, navigate } = useApp()
-  const handleTabPress = useNavegacionPestañas()
   const { items, cargandoInicial, cargandoMas, error, hayMas, refrescando, cargarMas, refrescar } =
     useReciclajesPaginado(userData?.id, 10)
 
@@ -120,7 +117,6 @@ export function PantallaHistorialReciclajes() {
         contentContainerStyle={estilos.contenido}
         showsVerticalScrollIndicator={false}
       />
-      <BarraDeNavegacion activeTab="home" onTabPress={handleTabPress} />
     </View>
   )
 }

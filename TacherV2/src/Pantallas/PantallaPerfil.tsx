@@ -11,68 +11,97 @@ import {
   type LucideIcon,
 } from 'lucide-react-native'
 import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
+import { AvatarInicial } from 'src/components/CirculoMarca'
 import { Encabezado } from 'src/components/Encabezado'
 import { MensajeExito } from 'src/components/MensajeExito'
 import { ModalCerrarSesion } from 'src/components/ModalCerrarSesion'
 import { useApp } from 'src/context/AppContext'
-import { getResumenRango } from 'src/domain/rangos'
+import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { COLORES, SOMBRAS } from 'src/theme'
+import { inicialesDe } from 'src/utils/iniciales'
 
 
 /** El rango se guarda sin tilde ("Arbol"); acá se muestra bien escrito. */
 const nombreDeRango = (nombre: string) => (nombre === 'Arbol' ? 'Árbol' : nombre)
 
+const formatear = (numero: number) => numero.toLocaleString('es-AR')
+
 
 // ---------------------------------------------------------------------------
-// Cabecera: ícono, nombre, rango y puntos
+// Avatar: círculo con degradé verde y las iniciales
 // ---------------------------------------------------------------------------
 
 
-interface CabeceraProps {
- nombre: string
- nombreRango: string
- IconoRango: LucideIcon
- puntos: number
+const TAMANIO_AVATAR = 96
+
+function Avatar({ nombre }: { nombre: string }) {
+  return (
+    <View style={estilos.avatarAnillo}>
+      <AvatarInicial
+        texto={inicialesDe(nombre)}
+        size={TAMANIO_AVATAR}
+        alternativa={<User size={42} color={COLORES.blanco} />}
+      />
+    </View>
+  )
 }
 
 
-function Cabecera({ nombre, nombreRango, IconoRango, puntos }: CabeceraProps) {
- return (
-   <View style={estilos.cabecera}>
-     <View style={estilos.avatar}>
-       <User size={52} color={COLORES.blanco} />
-     </View>
+// ---------------------------------------------------------------------------
+// Tarjetas de resumen: el rango (sale de los reciclajes) y los puntos (para canjear)
+// van separados para que no se confunda una cosa con la otra.
+// ---------------------------------------------------------------------------
 
 
-     <Text style={estilos.nombre} numberOfLines={1}>
-       @{nombre}
-     </Text>
+interface TarjetaRangoProps {
+  nombreRango: string
+  IconoRango: LucideIcon
+  reciclajes: number
+}
 
+/** Rango y reciclajes: clara. */
+function TarjetaRango({ nombreRango, IconoRango, reciclajes }: TarjetaRangoProps) {
+  return (
+    <View style={[estilos.tarjeta, estilos.tarjetaClara]}>
+      <View style={estilos.tarjetaFila}>
+        <View style={[estilos.tarjetaIcono, estilos.iconoSobreClaro]}>
+          <IconoRango size={22} color={COLORES.verde700} />
+        </View>
+        <View style={estilos.tarjetaDatos}>
+          <Text style={estilos.etiqueta}>Rango</Text>
+          <Text style={estilos.valorClaro} numberOfLines={1} adjustsFontSizeToFit>
+            {nombreRango}
+          </Text>
+          <Text style={estilos.detalleClaro} numberOfLines={1} adjustsFontSizeToFit>
+            {formatear(reciclajes)} {reciclajes === 1 ? 'reciclaje' : 'reciclajes'}
+          </Text>
+        </View>
+      </View>
+      <Text style={estilos.subtituloClaro}>Tus beneficios son de nivel {nombreRango}</Text>
+    </View>
+  )
+}
 
-     <View style={estilos.resumen}>
-       <View style={estilos.dato}>
-         <Text style={estilos.datoEtiqueta}>Rango</Text>
-         <View style={estilos.datoValor}>
-           <IconoRango size={20} color={COLORES.principal} />
-           <Text style={estilos.datoTexto}>{nombreRango}</Text>
-         </View>
-       </View>
-
-
-       <View style={estilos.separador} />
-
-
-       <View style={estilos.dato}>
-         <Text style={estilos.datoEtiqueta}>Puntos actuales</Text>
-         <View style={estilos.datoValor}>
-           <Coins size={20} color={COLORES.acento} />
-           <Text style={estilos.datoTexto}>{puntos.toLocaleString('es-AR')}</Text>
-         </View>
-       </View>
-     </View>
-   </View>
- )
+/** Puntos para canjear: oscura. */
+function TarjetaPuntos({ puntos }: { puntos: number }) {
+  return (
+    <View style={[estilos.tarjeta, estilos.tarjetaOscura]}>
+      <View style={estilos.circuloDecorativo} />
+      <View style={estilos.tarjetaFila}>
+        <View style={[estilos.tarjetaIcono, estilos.iconoSobreOscuro]}>
+          <Coins size={22} color={COLORES.oscuro} />
+        </View>
+        <View style={estilos.tarjetaDatos}>
+          <Text style={[estilos.etiqueta, estilos.etiquetaSobreOscuro]}>Puntos</Text>
+          <Text style={estilos.valorOscuro} numberOfLines={1} adjustsFontSizeToFit>
+            {formatear(puntos)}
+          </Text>
+        </View>
+      </View>
+      <Text style={estilos.subtituloOscuro}>Disponibles para canjear</Text>
+    </View>
+  )
 }
 
 
@@ -116,8 +145,13 @@ function Opcion({ icono: Icono, titulo, subtitulo, conDivisor, onPress }: Opcion
 
 function BotonCerrarSesion({ onPress }: { onPress: () => void }) {
  return (
-   <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={estilos.cerrarSesion}>
-     <LogOut size={22} color={COLORES.rojo600} />
+   <TouchableOpacity
+     activeOpacity={0.85}
+     onPress={onPress}
+     style={estilos.cerrarSesion}
+     accessibilityRole="button"
+   >
+     <LogOut size={22} color={COLORES.blanco} />
      <Text style={estilos.cerrarSesionTexto}>Cerrar sesión</Text>
    </TouchableOpacity>
  )
@@ -136,8 +170,11 @@ export function PantallaPerfil() {
   const [cerrandoSesion, setCerrandoSesion] = useState(false)
 
   const puntos = Number(userData?.Puntos) || 0
-  const resumenRango = getResumenRango(puntos)
-  const nombreRango = nombreDeRango(userData?.Rango || resumenRango.actual.name)
+  // El rango sale de los reciclajes, igual que en el Home
+  const reciclajes = Math.max(0, Number(userData?.reciclajes) || 0)
+  const resumenRango = getResumenRangoPorReciclajes(reciclajes)
+  const nombreRango = nombreDeRango(resumenRango.actual.name)
+  const nombre = userData?.Nombre || 'Usuario'
 
   const handleAbrirCerrarSesion = () => {
     setModalCerrarSesionVisible(true)
@@ -163,12 +200,21 @@ export function PantallaPerfil() {
       <Encabezado />
 
       <ScrollView contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false}>
-        <Cabecera
-          nombre={userData?.Nombre || 'Usuario'}
-          nombreRango={nombreRango}
-          IconoRango={resumenRango.actual.icon}
-          puntos={puntos}
-        />
+        <View style={estilos.cabecera}>
+          <Avatar nombre={nombre} />
+          <Text style={estilos.nombre} numberOfLines={1}>
+            @{nombre}
+          </Text>
+        </View>
+
+        <View style={estilos.resumen}>
+          <TarjetaRango
+            nombreRango={nombreRango}
+            IconoRango={resumenRango.actual.icon}
+            reciclajes={reciclajes}
+          />
+          <TarjetaPuntos puntos={puntos} />
+        </View>
 
         <View style={estilos.lista}>
           <Opcion
@@ -223,66 +269,134 @@ const estilos = StyleSheet.create({
  },
 
 
- // --- Cabecera
+ // --- Cabecera: avatar y nombre
  cabecera: {
    alignItems: 'center',
-   gap: 14,
+   gap: 12,
  },
- avatar: {
-   width: 108,
-   height: 108,
-   alignItems: 'center',
-   justifyContent: 'center',
-   borderRadius: 54,
+ avatarAnillo: {
+   borderRadius: TAMANIO_AVATAR / 2 + 4,
    borderWidth: 4,
-   borderColor: COLORES.acento,
-   backgroundColor: COLORES.oscuro,
-   ...SOMBRAS.media,
+   borderColor: COLORES.blanco,
+   backgroundColor: COLORES.blanco,
  },
  nombre: {
    maxWidth: '100%',
-   fontSize: 28,
-   lineHeight: 34,
+   fontSize: 24,
+   lineHeight: 30,
    fontWeight: '700',
-   letterSpacing: -0.7,
+   letterSpacing: -0.5,
    color: COLORES.texto,
  },
+
+
+ // --- Tarjetas de resumen: siempre lado a lado, mitad y mitad
  resumen: {
-   alignSelf: 'stretch',
    flexDirection: 'row',
-   marginTop: 4,
-   borderRadius: 20,
+   alignItems: 'stretch',
+   gap: 12,
+ },
+ tarjeta: {
+   flex: 1,
+   minWidth: 0,
+   gap: 12,
+   overflow: 'hidden',
+   borderRadius: 26,
+   paddingVertical: 16,
+   paddingHorizontal: 14,
+   // Sombra suave y difusa
+   shadowColor: COLORES.oscuro,
+   shadowOffset: { width: 0, height: 8 },
+   shadowOpacity: 0.12,
+   shadowRadius: 18,
+   elevation: 5,
+ },
+ tarjetaClara: {
    borderWidth: 1,
    borderColor: COLORES.linea,
    backgroundColor: COLORES.blanco,
-   paddingVertical: 16,
-   ...SOMBRAS.chica,
  },
- dato: {
-   flex: 1,
-   alignItems: 'center',
-   gap: 6,
+ tarjetaOscura: {
+   backgroundColor: COLORES.oscuro,
  },
- datoEtiqueta: {
-   fontSize: 14,
-   lineHeight: 18,
-   color: COLORES.textoSuave,
+ circuloDecorativo: {
+   position: 'absolute',
+   top: -50,
+   right: -45,
+   width: 120,
+   height: 120,
+   borderRadius: 60,
+   backgroundColor: 'rgba(255,255,255,0.06)',
  },
- datoValor: {
+ tarjetaFila: {
    flexDirection: 'row',
    alignItems: 'center',
-   gap: 8,
+   gap: 10,
  },
- datoTexto: {
-   fontSize: 22,
-   lineHeight: 28,
+ tarjetaIcono: {
+   width: 42,
+   height: 42,
+   alignItems: 'center',
+   justifyContent: 'center',
+   borderRadius: 14,
+ },
+ iconoSobreClaro: {
+   backgroundColor: COLORES.suave,
+ },
+ iconoSobreOscuro: {
+   backgroundColor: COLORES.acento,
+ },
+ tarjetaDatos: {
+   flex: 1,
+ },
+ etiqueta: {
+   fontSize: 11,
+   lineHeight: 15,
    fontWeight: '700',
+   letterSpacing: 0.6,
+   textTransform: 'uppercase',
+   color: COLORES.textoSuave,
+ },
+ etiquetaSobreOscuro: {
+   color: COLORES.sobreOscuro,
+ },
+ valorClaro: {
+   fontSize: 20,
+   lineHeight: 25,
+   fontWeight: '800',
+   letterSpacing: -0.5,
    color: COLORES.texto,
  },
- separador: {
-   width: 1,
-   marginVertical: 4,
-   backgroundColor: COLORES.linea,
+ detalleClaro: {
+   fontSize: 13,
+   lineHeight: 17,
+   fontWeight: '600',
+   color: COLORES.verde700,
+ },
+ valorOscuro: {
+   fontSize: 28,
+   lineHeight: 34,
+   fontWeight: '800',
+   letterSpacing: -1,
+   color: COLORES.blanco,
+ },
+ subtituloClaro: {
+   marginTop: 'auto',
+   borderTopWidth: 1,
+   borderTopColor: COLORES.linea,
+   paddingTop: 10,
+   fontSize: 12,
+   lineHeight: 16,
+   color: COLORES.textoSuave,
+ },
+ subtituloOscuro: {
+   marginTop: 'auto',
+   borderTopWidth: 1,
+   borderTopColor: 'rgba(255,255,255,0.12)',
+   paddingTop: 10,
+   fontSize: 12,
+   lineHeight: 16,
+   color: COLORES.sobreOscuro,
  },
 
 
@@ -336,15 +450,18 @@ const estilos = StyleSheet.create({
    justifyContent: 'center',
    gap: 10,
    borderRadius: 18,
-   borderWidth: 1,
-   borderColor: COLORES.rojo300,
-   backgroundColor: COLORES.rojo50,
+   backgroundColor: COLORES.rojo600,
+   shadowColor: COLORES.rojo600,
+   shadowOffset: { width: 0, height: 6 },
+   shadowOpacity: 0.25,
+   shadowRadius: 10,
+   elevation: 4,
  },
  cerrarSesionTexto: {
    fontSize: 17,
    lineHeight: 22,
    fontWeight: '700',
-   color: COLORES.rojo600,
+   color: COLORES.blanco,
  },
 })
 

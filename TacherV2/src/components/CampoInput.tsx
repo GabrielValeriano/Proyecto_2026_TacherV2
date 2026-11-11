@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react'
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 interface Props extends TextInputProps {
   label?: string
@@ -38,7 +38,8 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 16,
+    minHeight: 52,
+    borderRadius: RADIOS.medio,
     borderWidth: 1,
     borderColor: COLORES.verde200,
     backgroundColor: COLORES.blanco,
@@ -52,7 +53,7 @@ const estilos = StyleSheet.create({
   input: {
     flex: 1,
     padding: 0,
-    fontSize: 14,
+    fontSize: 15,
     color: COLORES.gris900,
   },
 })

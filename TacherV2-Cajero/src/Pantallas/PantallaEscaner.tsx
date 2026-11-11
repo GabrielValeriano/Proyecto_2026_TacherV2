@@ -1,42 +1,40 @@
-import React, { useRef, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera'
-import { Camera, X } from 'lucide-react-native'
-import { BotonPrimario } from 'src/components/BotonPrimario'
+import { X } from 'lucide-react-native'
 import { finalizarCanje, type ResultadoCanje } from 'src/services/canjes'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 interface Props {
   onResultado: (resultado: ResultadoCanje) => void
   onCancelar: () => void
 }
 
-function PedirPermiso({ onPermitir, onVolver }: { onPermitir: () => void; onVolver: () => void }) {
-  return (
-    <View style={estilos.permiso}>
-      <View style={estilos.permisoIcono}>
-        <Camera size={40} color={COLORES.principal} />
-      </View>
-      <Text style={estilos.permisoTitulo}>Necesitamos la cámara</Text>
-      <Text style={estilos.permisoTexto}>
-        Para leer el QR del cliente, TeacherV2 necesita acceso a la cámara del teléfono.
-      </Text>
-      <BotonPrimario label="Permitir cámara" onPress={onPermitir} />
-      <BotonPrimario label="Volver" variante="contorno" onPress={onVolver} />
-    </View>
-  )
-}
+/** Fondo alrededor del marco: oscuro para que el texto blanco se lea sobre cualquier imagen. */
+const OVERLAY = 'rgba(0,0,0,0.72)'
+const GROSOR_ESQUINA = 5
+const LARGO_ESQUINA = 38
 
 export function PantallaEscaner({ onResultado, onCancelar }: Props) {
-  const [permiso, pedirPermiso] = useCameraPermissions()
+  const [permiso] = useCameraPermissions()
   const [validando, setValidando] = useState(false)
   const yaLeido = useRef(false) // evita procesar el mismo QR varias veces
+  const { width } = useWindowDimensions()
+  const ladoMarco = Math.min(width - 72, 280)
 
-  if (!permiso) return <View style={estilos.pantalla} />
+  // El permiso se pide desde Inicio al tocar "Escanear QR"; si por algo no está, volvemos
+  useEffect(() => {
+    if (permiso && !permiso.granted) onCancelar()
+  }, [permiso, onCancelar])
 
-  if (!permiso.granted) {
-    return <PedirPermiso onPermitir={pedirPermiso} onVolver={onCancelar} />
-  }
+  if (!permiso?.granted) return <View style={estilos.pantalla} />
 
   const handleEscaneo = async ({ data }: BarcodeScanningResult) => {
     if (yaLeido.current) return
@@ -56,25 +54,51 @@ export function PantallaEscaner({ onResultado, onCancelar }: Props) {
         onBarcodeScanned={validando ? undefined : handleEscaneo}
       />
 
-      <View style={estilos.marco}>
-        <Text style={estilos.textoMarco}>Apuntá al QR del cliente</Text>
+      <View style={StyleSheet.absoluteFill}>
+        {/* Arriba: la instrucción */}
+        <View style={[estilos.oscuro, estilos.zonaSuperior]}>
+          <Text style={estilos.titulo} accessibilityRole="header">
+            Apuntá al QR del cliente
+          </Text>
+          <Text style={estilos.subtitulo}>El canje se valida solo apenas se lee el código</Text>
+        </View>
+
+        {/* Medio: el marco transparente */}
+        <View style={[estilos.filaMarco, { height: ladoMarco }]}>
+          <View style={[estilos.oscuro, estilos.lateral]} />
+          <View style={[estilos.marco, { width: ladoMarco }]}>
+            <View style={[estilos.esquina, estilos.esquinaArribaIzq]} />
+            <View style={[estilos.esquina, estilos.esquinaArribaDer]} />
+            <View style={[estilos.esquina, estilos.esquinaAbajoIzq]} />
+            <View style={[estilos.esquina, estilos.esquinaAbajoDer]} />
+          </View>
+          <View style={[estilos.oscuro, estilos.lateral]} />
+        </View>
+
+        {/* Abajo: cancelar */}
+        <View style={[estilos.oscuro, estilos.zonaInferior]}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onCancelar}
+            disabled={validando}
+            style={estilos.botonCancelar}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar el escaneo"
+          >
+            <X size={22} strokeWidth={2.5} color={COLORES.rojo600} />
+            <Text style={estilos.botonCancelarTexto}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {validando && (
-        <View style={estilos.cubierta}>
-          <ActivityIndicator size="large" color={COLORES.blanco} />
-          <Text style={estilos.textoValidando}>Validando canje…</Text>
+        <View style={estilos.cubierta} accessibilityLiveRegion="polite">
+          <View style={estilos.cubiertaTarjeta}>
+            <ActivityIndicator size="large" color={COLORES.principal} />
+            <Text style={estilos.textoValidando}>Validando canje…</Text>
+          </View>
         </View>
       )}
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={onCancelar}
-        disabled={validando}
-        style={estilos.botonCancelar}
-      >
-        <X size={26} color={COLORES.blanco} />
-      </TouchableOpacity>
     </View>
   )
 }
@@ -82,87 +106,128 @@ export function PantallaEscaner({ onResultado, onCancelar }: Props) {
 const estilos = StyleSheet.create({
   pantalla: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#000',
   },
-  marco: {
-    width: 280,
-    height: 280,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    borderWidth: 3,
-    borderColor: COLORES.principal,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-    padding: 14,
+  oscuro: {
+    backgroundColor: OVERLAY,
   },
-  textoMarco: {
-    overflow: 'hidden',
-    borderRadius: 9999,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+
+  // --- Arriba
+  zonaSuperior: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+  },
+  titulo: {
     textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '500',
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
     color: COLORES.blanco,
   },
+  subtitulo: {
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 21,
+    color: '#EDEDED',
+  },
+
+  // --- Marco
+  filaMarco: {
+    flexDirection: 'row',
+  },
+  lateral: {
+    flex: 1,
+  },
+  marco: {
+    borderRadius: RADIOS.grande,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.85)',
+  },
+  esquina: {
+    position: 'absolute',
+    width: LARGO_ESQUINA,
+    height: LARGO_ESQUINA,
+    borderColor: COLORES.acento,
+  },
+  esquinaArribaIzq: {
+    top: -GROSOR_ESQUINA,
+    left: -GROSOR_ESQUINA,
+    borderTopWidth: GROSOR_ESQUINA,
+    borderLeftWidth: GROSOR_ESQUINA,
+    borderTopLeftRadius: RADIOS.grande,
+  },
+  esquinaArribaDer: {
+    top: -GROSOR_ESQUINA,
+    right: -GROSOR_ESQUINA,
+    borderTopWidth: GROSOR_ESQUINA,
+    borderRightWidth: GROSOR_ESQUINA,
+    borderTopRightRadius: RADIOS.grande,
+  },
+  esquinaAbajoIzq: {
+    bottom: -GROSOR_ESQUINA,
+    left: -GROSOR_ESQUINA,
+    borderBottomWidth: GROSOR_ESQUINA,
+    borderLeftWidth: GROSOR_ESQUINA,
+    borderBottomLeftRadius: RADIOS.grande,
+  },
+  esquinaAbajoDer: {
+    bottom: -GROSOR_ESQUINA,
+    right: -GROSOR_ESQUINA,
+    borderBottomWidth: GROSOR_ESQUINA,
+    borderRightWidth: GROSOR_ESQUINA,
+    borderBottomRightRadius: RADIOS.grande,
+  },
+
+  // --- Abajo
+  zonaInferior: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  botonCancelar: {
+    minWidth: 190,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: RADIOS.pildora,
+    backgroundColor: COLORES.blanco,
+    paddingHorizontal: 26,
+    ...SOMBRAS.grande,
+  },
+  botonCancelarTexto: {
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '800',
+    color: COLORES.rojo600,
+  },
+
+  // --- Validando
   cubierta: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORES.overlay,
+  },
+  cubiertaTarjeta: {
+    alignItems: 'center',
     gap: 14,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: RADIOS.tarjeta,
+    backgroundColor: COLORES.blanco,
+    paddingHorizontal: 32,
+    paddingVertical: 26,
+    ...SOMBRAS.grande,
   },
   textoValidando: {
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
-    color: COLORES.blanco,
-  },
-  botonCancelar: {
-    position: 'absolute',
-    bottom: 40,
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 30,
-    backgroundColor: 'rgba(220,38,38,0.9)',
-    ...SOMBRAS.grande,
-  },
-
-  // --- Pedido de permiso de cámara
-  permiso: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-    backgroundColor: COLORES.blanco,
-    padding: 24,
-  },
-  permisoIcono: {
-    width: 88,
-    height: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 28,
-    backgroundColor: COLORES.suave,
-  },
-  permisoTitulo: {
-    fontSize: 24,
-    lineHeight: 30,
     fontWeight: '700',
-    letterSpacing: -0.5,
     color: COLORES.texto,
   },
-  permisoTexto: {
-    marginBottom: 6,
-    textAlign: 'center',
-    fontSize: 15,
-    lineHeight: 22,
-    color: COLORES.textoSuave,
-  },
+
 })

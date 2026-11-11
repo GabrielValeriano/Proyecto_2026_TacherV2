@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Esqueleto } from 'src/components/Esqueleto'
-import { COLORES } from 'src/theme'
+import { COLORES, RADIOS } from 'src/theme'
 
 /** Silueta de la cuadrícula de productos de la pantalla Canjes. */
 export function EsqueletoProductos({ cantidad = 4 }: { cantidad?: number }) {
@@ -30,7 +30,7 @@ const estilos = StyleSheet.create({
   },
   tarjeta: {
     width: '48%',
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,

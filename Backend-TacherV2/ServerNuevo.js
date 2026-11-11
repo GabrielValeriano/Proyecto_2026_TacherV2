@@ -28,6 +28,15 @@ const db = getFirestore();
 registrarRutasRecuperacion(app, db);
 registrarRutasVerificacionRegistro(app, db);
 
+// La app no deja registrar un DNI dos veces (colección DNIS). Si igual aparece repetido
+// (datos viejos), se usa la primera cuenta y se avisa en la consola para corregirlo.
+function avisarSiDniRepetido(dni, usuarioSnap) {
+  if (usuarioSnap.size > 1) {
+    const uids = usuarioSnap.docs.map((d) => d.id).join(', ');
+    console.warn(`⚠️ El DNI ${dni} está en ${usuarioSnap.size} cuentas (${uids}). Se usa la primera.`);
+  }
+}
+
 // Endpoint de prueba de salud
 app.get('/', (req, res) => {
   res.send('API de Sistema de Reciclaje Inteligente activa.');
@@ -60,6 +69,7 @@ app.post('/api/verificar-dni', async (req, res) => {
       });
     }
 
+    avisarSiDniRepetido(dniString, usuarioSnap);
     const usuarioDoc = usuarioSnap.docs[0];
     const usuarioData = usuarioDoc.data();
 
@@ -155,6 +165,7 @@ app.post('/api/registrar-reciclaje', async (req, res) => {
       return res.status(404).json({ exito: false, codigo_error: 1003, mensaje: 'Usuario no encontrado' });
     }
 
+    avisarSiDniRepetido(dniString, usuarioSnap);
     const usuarioDoc = usuarioSnap.docs[0];
     const usuarioData = usuarioDoc.data();
     const nombreUsuario = usuarioData.Nombre || 'Usuario';

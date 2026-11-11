@@ -15,7 +15,7 @@ import { useErrorDeFormulario } from 'src/hooks/useErrorDeFormulario'
 import { useGoogleAuthFlow } from 'src/hooks/useGoogleAuthFlow'
 import { crearOReanudarCuentaEmail } from 'src/services/autenticacion'
 import { COLORES } from 'src/theme'
-import { mensajeDeError } from 'src/utils/errores'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaRegisterEmail() {
   const { navigate, actualizarFlowData, flowData } = useApp()
@@ -42,7 +42,7 @@ export function PantallaRegisterEmail() {
       navigate('login-code')
     } catch (err) {
       console.error('Error al crear la cuenta:', err)
-      setError('Error al crear la cuenta: ' + mensajeDeError(err, 'Error de conexión'))
+      setError('Ocurrió un problema de conexión. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -52,6 +52,9 @@ export function PantallaRegisterEmail() {
     setError('')
     registrarConGoogle(setError)
   }
+
+  // Misma pantalla de carga que en el Login mientras se procesa la cuenta de Google
+  if (loadingGoogle) return <PantallaCarga mensaje="Conectando con Google…" />
 
   return (
     <View style={estilos.pantalla}>
@@ -92,8 +95,6 @@ export function PantallaRegisterEmail() {
             icon={<Lock size={16} color={COLORES.verde} />}
           />
 
-          <MensajeError message={error} />
-
           <BotonPrimario
             label="Siguiente"
             onPress={handleSiguiente}
@@ -108,6 +109,12 @@ export function PantallaRegisterEmail() {
             onPress={handleGoogle}
             loading={loadingGoogle}
           />
+        </View>
+
+        {/* El error va entre Google y el enlace inferior. El espacio está reservado: cuando
+            aparece no empuja los campos de arriba. */}
+        <View style={estilos.zonaError}>
+          <MensajeError message={error} />
         </View>
 
         <EnlaceAlternativo
@@ -142,6 +149,10 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22.75,
     color: COLORES.gris500,
+  },
+  zonaError: {
+    minHeight: 64,
+    justifyContent: 'center',
   },
   botonSiguiente: {
     marginTop: 8,

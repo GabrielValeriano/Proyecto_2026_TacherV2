@@ -1,17 +1,20 @@
 import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useCameraPermissions } from 'expo-camera'
-import { IdCard, ScanLine, ShieldCheck } from 'lucide-react-native'
-import { BotonPrimario } from 'src/components/BotonPrimario'
+import { ScanLine, ShieldCheck, Sun } from 'lucide-react-native'
+import { PresentacionEscaneoDNI, type AvisoDNI } from 'src/components/PresentacionEscaneoDNI'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { VistaCamaraDNI } from 'src/components/VistaCamaraDNI'
 import { useApp } from 'src/context/AppContext'
 import { useVolverAlRegistro } from 'src/hooks/useVolverAlRegistro'
+import { obtenerUidActual } from 'src/services/autenticacion'
+import { dniEnUsoPorOtro, MENSAJE_DNI_EN_USO } from 'src/services/usuarios'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES } from 'src/theme'
 import { extraerDniDesdeCodigo } from 'src/utils/dni'
 
-const AVISOS = [
+const AVISOS: AvisoDNI[] = [
+  { icon: Sun, text: 'Buscá un lugar con buena luz y apoyá el DNI sobre una superficie lisa.' },
   { icon: ScanLine, text: 'Escaneamos únicamente el código de barras del DNI.' },
   { icon: ShieldCheck, text: 'Tus datos se usan solo para identificarte al reciclar.' },
 ]
@@ -20,9 +23,12 @@ export function PantallaEscanearDNI() {
   const { navigate, actualizarFlowData } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
   const [escaneando, setEscaneando] = useState(false)
+  const [comprobando, setComprobando] = useState(false)
+  const [error, setError] = useState('')
   const { volverAlRegistro, saliendo } = useVolverAlRegistro()
 
   const handleIniciarEscaneo = async () => {
+    setError('')
     if (!permission?.granted) {
       const respuesta = await requestPermission()
       if (!respuesta.granted) {
@@ -35,10 +41,26 @@ export function PantallaEscanearDNI() {
     setEscaneando(true)
   }
 
-  const handleEscaneado = (datos: string) => {
-    const dniLimpio = extraerDniDesdeCodigo(datos)
-    actualizarFlowData({ dni: dniLimpio })
+  const handleEscaneado = async (datos: string) => {
     setEscaneando(false)
+    const dniLimpio = extraerDniDesdeCodigo(datos)
+    if (!dniLimpio) return setError('No pudimos leer el DNI. Intentá escanearlo nuevamente.')
+
+    const uid = obtenerUidActual()
+    if (!uid) return setError('Tu sesión expiró. Volvé al registro e intentá de nuevo.')
+
+    // Aviso temprano; al crear la cuenta se vuelve a comprobar dentro de la transacción
+    setComprobando(true)
+    try {
+      if (await dniEnUsoPorOtro(dniLimpio, uid)) return setError(MENSAJE_DNI_EN_USO)
+    } catch (err) {
+      console.error('Error al comprobar el DNI:', err)
+      return setError('No pudimos comprobar tu DNI. Revisá tu conexión e intentá de nuevo.')
+    } finally {
+      setComprobando(false)
+    }
+
+    actualizarFlowData({ dni: dniLimpio })
     navigate('register-username')
   }
 
@@ -51,112 +73,22 @@ export function PantallaEscanearDNI() {
   return (
     <View style={estilos.pantalla}>
       <ScreenHeader title="Verificá tu identidad" onBack={volverAlRegistro} />
-      <ScrollView contentContainerStyle={estilos.contenido}>
-        <View>
-          <View style={estilos.iconoPrincipal}>
-            <IdCard size={40} strokeWidth={1.75} color={COLORES.verde} />
-          </View>
-
-          <Text style={estilos.titulo}>Vamos a escanear tu documento</Text>
-          <Text style={estilos.descripcion}>
-            Necesitamos leer el código de barras de tu DNI para vincular tus reciclajes a tu
-            cuenta. Así sabemos a quién sumarle los puntos en la caja.
-          </Text>
-
-          <View style={estilos.avisos}>
-            {AVISOS.map(({ icon: Icono, text }) => (
-              <View key={text} style={estilos.aviso}>
-                <View style={estilos.avisoIcono}>
-                  <Icono size={20} color={COLORES.verde} />
-                </View>
-                <Text style={estilos.avisoTexto}>{text}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <BotonPrimario
-          label="Escanear documento"
-          onPress={handleIniciarEscaneo}
-          icon={<ScanLine size={20} color={COLORES.blanco} />}
-          style={estilos.botonEscanear}
-        />
-      </ScrollView>
+      <PresentacionEscaneoDNI
+        titulo="Vamos a escanear tu documento"
+        descripcion="Necesitamos leer el código de barras de tu DNI para vincular tus reciclajes a tu cuenta. Así sabemos a quién sumarle los puntos en la caja."
+        avisos={AVISOS}
+        error={error}
+        labelBoton="Escanear documento"
+        onEscanear={handleIniciarEscaneo}
+        cargando={comprobando}
+      />
     </View>
   )
 }
 
 const estilos = StyleSheet.create({
-  // --- Pantalla de introducción
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.blanco,
-  },
-  contenido: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-    paddingTop: 24,
-  },
-  iconoPrincipal: {
-    alignSelf: 'center',
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORES.verde200,
-    backgroundColor: COLORES.verde100,
-    ...SOMBRAS.chica,
-  },
-  titulo: {
-    marginTop: 24,
-    textAlign: 'center',
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    color: COLORES.gris900,
-  },
-  descripcion: {
-    marginTop: 8,
-    textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 22.75,
-    color: COLORES.gris500,
-  },
-  avisos: {
-    marginTop: 32,
-    gap: 12,
-  },
-  aviso: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORES.verde100,
-    backgroundColor: COLORES.verde50,
-    padding: 16,
-    ...SOMBRAS.chica,
-  },
-  avisoIcono: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: COLORES.verde100,
-  },
-  avisoTexto: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 16.5,
-    color: COLORES.gris600,
-  },
-  botonEscanear: {
-    marginTop: 32,
   },
 })

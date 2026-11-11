@@ -1,3 +1,4 @@
+// Copia de TacherV2/src/theme.ts: si cambiás uno, cambiá el otro para que las dos apps se vean iguales.
 import type { ViewStyle } from 'react-native'
 
 interface Paleta {
@@ -60,7 +61,7 @@ const PALETAS: Record<'suave' | 'equilibrada' | 'vibrante' | 'sol', Paleta> = {
     principal: '#268257',
     principalOscuro: '#1D6A47',
     suave: '#DDF0E5',
-    acento: '#F2B93B',
+    acento: '#B7E34B',
     fondo: '#F8FAF4',
     texto: '#14281F',
     textoSuave: '#55675D',
@@ -79,6 +80,7 @@ export const COLORES = {
   // --- Paleta (usá estos nombres en el código nuevo)
   oscuro: p.oscuro,
   principal: p.principal,
+  principalOscuro: p.principalOscuro,
   suave: p.suave,
   acento: p.acento,
   fondo: p.fondo,
@@ -109,6 +111,15 @@ export const COLORES = {
   gris900: p.texto,
   gris: '#9AAAA1',
 
+  // --- Avisos (por ejemplo, "te faltan puntos"): ámbar que combina con el verde
+  aviso50: '#FFF6DD',
+  aviso200: '#FFE29A',
+  aviso500: '#E09B12',
+  avisoOscuro: '#7A4A00',
+
+  // --- Fondo semitransparente detrás de modales: verde muy oscuro en vez de negro puro
+  overlay: 'rgba(10,31,23,0.62)',
+
   // --- Solo para errores y acciones peligrosas
   rojo50: '#fef2f2',
   rojo300: '#fca5a5',
@@ -116,8 +127,29 @@ export const COLORES = {
   rojo600: '#dc2626',
 }
 
+/** Degradé de la marca (logo, avatar): del verde principal al oscuro, en diagonal. */
+export const DEGRADE_MARCA = { desde: p.principal, hasta: p.oscuro } as const
+
+/** Radios de borde: mismo redondeo en toda la app. */
+export const RADIOS = {
+  chico: 12, // chips chicos, íconos dentro de listas
+  medio: 16, // campos de texto, íconos en recuadro
+  boton: 18, // botones
+  tarjeta: 24, // tarjetas y contenedores
+  grande: 28, // tarjetas destacadas, modales
+  pildora: 9999,
+} as const
+
 /** Sombras reutilizables. Se usan con spread: { ...SOMBRAS.chica } */
-export const SOMBRAS: Record<'chica' | 'media' | 'grande', ViewStyle> = {
+export const SOMBRAS: Record<'chica' | 'media' | 'grande' | 'marca', ViewStyle> = {
+  /** Sombra verdosa y difusa, la misma del logo: para lo que tiene que destacar. */
+  marca: {
+    shadowColor: p.oscuro,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
+  },
   chica: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },

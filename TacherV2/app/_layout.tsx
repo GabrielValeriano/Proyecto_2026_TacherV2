@@ -18,7 +18,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack />
+      {/* La app dibuja su propio encabezado (Encabezado / ScreenHeader): sin esto Expo Router
+          muestra una barra con el nombre de la ruta ("index") */}
+      <Stack screenOptions={{ headerShown: false }} />
       <PortalHost />
     </ThemeProvider>
   );

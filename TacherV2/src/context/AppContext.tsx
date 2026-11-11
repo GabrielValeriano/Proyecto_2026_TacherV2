@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import * as Notifications from 'expo-notifications'
 import { cerrarSesionFirebase } from 'src/services/autenticacion'
 import { escucharUsuario } from 'src/services/usuarios'
@@ -28,6 +28,16 @@ export function useApp(): AppContextValue {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [pantallaActual, setPantallaActual] = useState<Pantalla>('welcome')
+  const [pantallaAnterior, setPantallaAnterior] = useState<Pantalla | null>(null)
+  const pantallaActualRef = useRef(pantallaActual)
+  pantallaActualRef.current = pantallaActual
+
+  /** Cambia de pantalla y recuerda de dónde se vino. */
+  const navigate = useCallback((destino: Pantalla) => {
+    if (destino === pantallaActualRef.current) return
+    setPantallaAnterior(pantallaActualRef.current)
+    setPantallaActual(destino)
+  }, [])
   const [cargandoSesion, setCargandoSesion] = useState(true)
   const [seccionEnDesarrollo, setSeccionEnDesarrollo] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
@@ -170,7 +180,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         seccionEnDesarrollo,
         userData,
         flowData,
-        navigate: setPantallaActual,
+        pantallaAnterior,
+        navigate,
         abrirEnDesarrollo,
         actualizarFlowData,
         setUserDocId,

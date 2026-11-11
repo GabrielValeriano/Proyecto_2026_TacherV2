@@ -1,13 +1,15 @@
 import React from 'react'
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Bell, Recycle } from 'lucide-react-native'
+import { Bell } from 'lucide-react-native'
+import { CirculoMarca } from 'src/components/CirculoMarca'
+import { MarcaTacherV2, TacherV2Logo } from 'src/components/TacherV2Logo'
 import { useApp } from 'src/context/AppContext'
 import { COLORES } from 'src/theme'
 
 /** Banner de las pantallas principales: notificaciones a la izquierda, nombre al centro e información a la derecha. */
 export function Encabezado() {
-  const { abrirEnDesarrollo, navigate, notificaciones } = useApp()
+  const { navigate, notificaciones } = useApp()
   const { top } = useSafeAreaInsets()
   const noLeidas = notificaciones.filter((notificacion) => !notificacion.leida).length
 
@@ -23,9 +25,12 @@ export function Encabezado() {
         accessibilityLabel={
           noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : 'Notificaciones'
         }
-        style={[estilos.botonCircular, estilos.botonLogo]}
+        hitSlop={6}
       >
-        <Bell size={24} color={COLORES.blanco} />
+        {/* Mismo círculo, tamaño y sombra que el logo de la derecha */}
+        <CirculoMarca size={44}>
+          <Bell size={22} strokeWidth={2} color={COLORES.blanco} />
+        </CirculoMarca>
         {noLeidas > 0 && (
           <View style={estilos.insignia}>
             <Text style={estilos.insigniaTexto}>{noLeidas > 9 ? '9+' : noLeidas}</Text>
@@ -33,17 +38,16 @@ export function Encabezado() {
         )}
       </TouchableOpacity>
 
-      <Text style={estilos.nombre}>
-        Tacher<Text style={estilos.nombreV2}>V2</Text>
-      </Text>
+      <MarcaTacherV2 tamanio={25} claro />
 
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => abrirEnDesarrollo('Información')}
+        onPress={() => navigate('informacion')}
         accessibilityLabel="Información de la app"
-        style={[estilos.botonCircular, estilos.botonLogo]}
+        hitSlop={6}
       >
-        <Recycle size={24} color={COLORES.blanco} />
+        {/* El mismo logo de la bienvenida */}
+        <TacherV2Logo size={44} />
       </TouchableOpacity>
     </View>
   )
@@ -51,7 +55,7 @@ export function Encabezado() {
 
 const estilos = StyleSheet.create({
   barra: {
-    height: 68,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -63,17 +67,6 @@ const estilos = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: COLORES.oscuro,
-  },
-  botonCircular: {
-    width: 45,
-    height: 45,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  botonLogo: {
-    backgroundColor: COLORES.principal,
   },
   insignia: {
     position: 'absolute',
@@ -94,15 +87,5 @@ const estilos = StyleSheet.create({
     lineHeight: 12,
     fontWeight: '800',
     color: COLORES.oscuro,
-  },
-  nombre: {
-    fontSize: 25,
-    lineHeight: 28,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    color: COLORES.blanco,
-  },
-  nombreV2: {
-    color: COLORES.acento,
   },
 })

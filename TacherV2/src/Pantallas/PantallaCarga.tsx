@@ -1,6 +1,6 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
-import { TeacherV2Logo } from 'src/components/TeacherV2Logo'
+import { TacherV2Logo } from 'src/components/TacherV2Logo'
 import { COLORES } from 'src/theme'
 
 /**
@@ -10,7 +10,7 @@ import { COLORES } from 'src/theme'
 export function PantallaCarga({ mensaje }: { mensaje?: string }) {
   return (
     <View style={estilos.pantalla}>
-      <TeacherV2Logo size={72} withWordmark />
+      <TacherV2Logo size={104} halo withWordmark />
       <ActivityIndicator size="large" color={COLORES.principal} style={estilos.rueda} />
       {mensaje ? <Text style={estilos.mensaje}>{mensaje}</Text> : null}
     </View>
@@ -22,7 +22,7 @@ const estilos = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORES.blanco,
+    backgroundColor: COLORES.fondo,
     paddingHorizontal: 24,
   },
   rueda: {

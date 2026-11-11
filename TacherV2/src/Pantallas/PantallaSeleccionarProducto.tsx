@@ -4,7 +4,7 @@ import { QrCode, X, Coins } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { ImagenProducto } from 'src/components/ImagenProducto'
 import { useApp } from 'src/context/AppContext'
-import { COLORES } from 'src/theme'
+import { COLORES, RADIOS } from 'src/theme'
 
 export function PantallaSeleccionarProducto() {
   const { productoSeleccionado, userData, navigate } = useApp()
@@ -124,14 +124,14 @@ export function PantallaSeleccionarProducto() {
 const estilos = StyleSheet.create({
   contenedorOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro translúcido superpuesto
+    backgroundColor: COLORES.overlay, // Fondo oscuro translúcido superpuesto
     justifyContent: 'flex-end', // Ancla el modal abajo estilo Bottom Sheet
   },
   modalCard: {
     height: '92%', // Ocupa casi toda la altura de la pantalla
     backgroundColor: COLORES.blanco,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: RADIOS.grande,
+    borderTopRightRadius: RADIOS.grande,
     overflow: 'hidden',
     flexDirection: 'column',
   },
@@ -142,7 +142,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORES.verde100 || '#E5E7EB',
+    borderBottomColor: COLORES.verde100,
   },
   botonCerrar: {
     padding: 4,
@@ -205,7 +205,7 @@ const estilos = StyleSheet.create({
   },
   barraProgresoFondo: {
     height: 6,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORES.gris200,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -223,13 +223,13 @@ const estilos = StyleSheet.create({
   pie: {
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORES.verde100 || '#E5E7EB',
+    borderTopColor: COLORES.verde100,
     backgroundColor: COLORES.blanco,
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
   botonSecundario: {
-    borderRadius: 9999,
+    borderRadius: RADIOS.boton,
     borderWidth: 1.5,
     borderColor: COLORES.principal,
     backgroundColor: COLORES.blanco,

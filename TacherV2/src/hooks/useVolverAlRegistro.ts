@@ -1,0 +1,25 @@
+import { useState } from 'react'
+import { useApp } from 'src/context/AppContext'
+import { descartarCuentaIncompleta } from 'src/services/autenticacion'
+
+/**
+ * "Volver" desde los pasos del registro posteriores a crear la cuenta en Auth.
+ * Antes de volver descarta la cuenta a medias, así el usuario puede registrarse de nuevo
+ * con el mismo mail (y otra contraseña, si quiere) sin el error de "ya registrado".
+ */
+export function useVolverAlRegistro() {
+  const { navigate } = useApp()
+  const [saliendo, setSaliendo] = useState(false)
+
+  const volverAlRegistro = async () => {
+    if (saliendo) return
+    setSaliendo(true)
+    try {
+      await descartarCuentaIncompleta()
+    } finally {
+      navigate('register-email')
+    }
+  }
+
+  return { volverAlRegistro, saliendo }
+}

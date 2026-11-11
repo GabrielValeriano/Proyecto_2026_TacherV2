@@ -42,7 +42,12 @@ export function PantallaLoginEmail() {
       if (await existePerfil(resultado.uid)) {
         setUserDocId(resultado.uid)
         navigate('home')
-      } 
+      } else {
+        // La cuenta existe en Auth pero el registro quedó a medias: lo retomamos.
+        // La pantalla de verificación avanza sola si el correo ya estaba verificado.
+        actualizarFlowData({ email: correo, proveedor: 'email' })
+        navigate('login-code')
+      }
     } catch (err) {
       console.error('Error al iniciar sesión:', err)
       setError('Error al conectar con el servidor: ' + mensajeDeError(err, 'Intentalo más tarde.'))

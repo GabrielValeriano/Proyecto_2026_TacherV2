@@ -7,18 +7,23 @@ import { ScreenHeader } from 'src/components/ScreenHeader'
 import { TituloDePantalla } from 'src/components/TituloDePantalla'
 import { useApp } from 'src/context/AppContext'
 import { useVerificacionCorreo } from 'src/hooks/useVerificacionCorreo'
+import { useVolverAlRegistro } from 'src/hooks/useVolverAlRegistro'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 import { COLORES, SOMBRAS } from 'src/theme'
 
 export function PantallaVerificacionCodigo() {
   const { navigate, flowData } = useApp()
   const { error, aviso, comprobando, esperaReenvio, reenviar, comprobarAhora } =
     useVerificacionCorreo(() => navigate('confirm-scan'))
+  const { volverAlRegistro, saliendo } = useVolverAlRegistro()
 
   const puedeReenviar = esperaReenvio === 0
 
+  if (saliendo) return <PantallaCarga mensaje="Volviendo al registro…" />
+
   return (
     <View style={estilos.pantalla}>
-      <ScreenHeader title="Verificá tu correo" onBack={() => navigate('register-email')} />
+      <ScreenHeader title="Verificá tu correo" onBack={volverAlRegistro} />
       <View style={estilos.contenido}>
         <View style={estilos.formulario}>
           <View style={estilos.icono}>

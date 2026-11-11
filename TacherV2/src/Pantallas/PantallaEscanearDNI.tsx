@@ -6,6 +6,8 @@ import { BotonPrimario } from 'src/components/BotonPrimario'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { VistaCamaraDNI } from 'src/components/VistaCamaraDNI'
 import { useApp } from 'src/context/AppContext'
+import { useVolverAlRegistro } from 'src/hooks/useVolverAlRegistro'
+import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 import { COLORES, SOMBRAS } from 'src/theme'
 import { extraerDniDesdeCodigo } from 'src/utils/dni'
 
@@ -18,6 +20,7 @@ export function PantallaEscanearDNI() {
   const { navigate, actualizarFlowData } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
   const [escaneando, setEscaneando] = useState(false)
+  const { volverAlRegistro, saliendo } = useVolverAlRegistro()
 
   const handleIniciarEscaneo = async () => {
     if (!permission?.granted) {
@@ -39,13 +42,15 @@ export function PantallaEscanearDNI() {
     navigate('register-username')
   }
 
+  if (saliendo) return <PantallaCarga mensaje="Volviendo al registro…" />
+
   if (escaneando) {
     return <VistaCamaraDNI onEscaneado={handleEscaneado} onCancelar={() => setEscaneando(false)} />
   }
 
   return (
     <View style={estilos.pantalla}>
-      <ScreenHeader title="Verificá tu identidad" onBack={() => navigate('register-email')} />
+      <ScreenHeader title="Verificá tu identidad" onBack={volverAlRegistro} />
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View>
           <View style={estilos.iconoPrincipal}>

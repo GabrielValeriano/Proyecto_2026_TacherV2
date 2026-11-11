@@ -1,12 +1,22 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import * as Notifications from 'expo-notifications'
 import { cerrarSesionFirebase } from 'src/services/autenticacion'
 import { escucharUsuario } from 'src/services/usuarios'
-import type { AppContextValue, FlowData, Pantalla, Usuario, Producto } from 'src/types'
+import type { AppContextValue, FlowData, Notificacion, Pantalla, Usuario, Producto } from 'src/types'
 import { auth } from 'src/firebase'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 import { existePerfil } from 'src/services/usuarios'
 import { precargarDatos } from 'src/services/precarga'
 import { limpiarCache } from 'src/utils/cache'
+import { escucharNotificaciones } from 'src/services/notificaciones'
+import {
+  configurarNotificaciones,
+  destinoDeRespuesta,
+  quitarDispositivoDePush,
+  registrarDispositivoParaPush,
+} from 'src/services/push'
+
+configurarNotificaciones()
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -25,6 +35,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<Usuario | null>(null)
   const [flowData, setFlowData] = useState<FlowData>({})
   const [mensajeExito, setMensajeExito] = useState('')
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
+  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(true)
+  const [errorNotificaciones, setErrorNotificaciones] = useState('')
+  const ultimaRespuestaPush = Notifications.useLastNotificationResponse()
+  const respuestaPushManejada = useRef<string | null>(null)
 
 
   // Mantiene userData sincronizado en tiempo real con Firestore
@@ -41,6 +56,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
       if (userDocId) precargarDatos(userDocId)
     }, [userDocId])
+
+  // Notificaciones en tiempo real: lo que cree la caja o el cajero aparece solo
+  useEffect(() => {
+    setNotificaciones([])
+    setErrorNotificaciones('')
+    if (!userDocId) return
+    setCargandoNotificaciones(true)
+    return escucharNotificaciones(
+      userDocId,
+      (lista) => {
+        setNotificaciones(lista)
+        setCargandoNotificaciones(false)
+      },
+      (error) => {
+        console.error('Error escuchando notificaciones:', error)
+        setErrorNotificaciones('No se pudieron cargar tus notificaciones.')
+        setCargandoNotificaciones(false)
+      },
+    )
+  }, [userDocId])
+
+  // Asocia este teléfono a la cuenta para recibir push
+  useEffect(() => {
+    if (userDocId) registrarDispositivoParaPush(userDocId)
+  }, [userDocId])
+
+  // Tocar un push abre su pantalla. Sirve con la app abierta, en segundo plano o cerrada:
+  // en este último caso se espera a que se restaure la sesión antes de navegar.
+  useEffect(() => {
+    if (!ultimaRespuestaPush || cargandoSesion || !userDocId) return
+    const id = ultimaRespuestaPush.notification.request.identifier
+    if (respuestaPushManejada.current === id) return
+    respuestaPushManejada.current = id
+    Notifications.clearLastNotificationResponse()
+
+    const destino = destinoDeRespuesta(ultimaRespuestaPush)
+    if (destino) setPantallaActual(destino)
+  }, [ultimaRespuestaPush, cargandoSesion, userDocId])
 
   useEffect(() => {
       let activo = true
@@ -87,7 +140,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setFlowData((anterior) => ({ ...anterior, ...parcial }))
 
   const cerrarSesion = () => {
-    cerrarSesionFirebase().catch((error) => console.error('Error al cerrar sesión:', error))
+    const uid = userDocId
+    // Primero se desasocia el teléfono (necesita la sesión activa) y después se cierra la sesión
+    ;(uid ? quitarDispositivoDePush(uid) : Promise.resolve())
+      .then(() => cerrarSesionFirebase())
+      .catch((error) => console.error('Error al cerrar sesión:', error))
     setUserDocId(null)
     setFlowData({})
     setPantallaActual('welcome')
@@ -123,6 +180,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mensajeExito,
         mostrarExito,
         ocultarExito,
+        notificaciones,
+        cargandoNotificaciones,
+        errorNotificaciones,
       }}
     >
       {cargandoSesion ? <PantallaCarga/> : children}

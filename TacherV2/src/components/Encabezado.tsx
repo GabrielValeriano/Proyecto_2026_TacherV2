@@ -1,14 +1,15 @@
 import React from 'react'
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Recycle, User } from 'lucide-react-native'
+import { Bell, Recycle } from 'lucide-react-native'
 import { useApp } from 'src/context/AppContext'
 import { COLORES } from 'src/theme'
 
-/** Banner de las pantallas principales: perfil a la izquierda, nombre al centro e información a la derecha. */
+/** Banner de las pantallas principales: notificaciones a la izquierda, nombre al centro e información a la derecha. */
 export function Encabezado() {
-  const { abrirEnDesarrollo, navigate } = useApp()
+  const { abrirEnDesarrollo, navigate, notificaciones } = useApp()
   const { top } = useSafeAreaInsets()
+  const noLeidas = notificaciones.filter((notificacion) => !notificacion.leida).length
 
   return (
     <View style={estilos.barra}>
@@ -18,11 +19,18 @@ export function Encabezado() {
 
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => navigate('perfil')}
-        accessibilityLabel="Perfil"
+        onPress={() => navigate('notificaciones')}
+        accessibilityLabel={
+          noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : 'Notificaciones'
+        }
         style={[estilos.botonCircular, estilos.botonLogo]}
       >
-        <User size={24} color={COLORES.blanco} />
+        <Bell size={24} color={COLORES.blanco} />
+        {noLeidas > 0 && (
+          <View style={estilos.insignia}>
+            <Text style={estilos.insigniaTexto}>{noLeidas > 9 ? '9+' : noLeidas}</Text>
+          </View>
+        )}
       </TouchableOpacity>
 
       <Text style={estilos.nombre}>
@@ -66,6 +74,26 @@ const estilos = StyleSheet.create({
   },
   botonLogo: {
     backgroundColor: COLORES.principal,
+  },
+  insignia: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORES.oscuro,
+    backgroundColor: COLORES.acento,
+  },
+  insigniaTexto: {
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '800',
+    color: COLORES.oscuro,
   },
   nombre: {
     fontSize: 25,

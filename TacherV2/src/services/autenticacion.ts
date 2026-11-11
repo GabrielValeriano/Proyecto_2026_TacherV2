@@ -1,8 +1,8 @@
 import {
   EmailAuthProvider,
   createUserWithEmailAndPassword,
+  deleteUser,
   reauthenticateWithCredential,
-  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   updatePassword,
@@ -48,6 +48,25 @@ export function iniciarSesionConEmail(email: string, password: string) {
 }
 
 /**
+ * Si hay una sesión abierta de una cuenta cuyo registro quedó a medias (existe en Auth
+ * pero no tiene perfil en Firestore), la borra de Auth para que el mail quede libre.
+ * Nunca toca cuentas con perfil. Si no se puede borrar (sin conexión, sesión vieja...),
+ * al menos cierra la sesión; en ese caso el registro se retoma con `crearOReanudarCuentaEmail`.
+ */
+export async function descartarCuentaIncompleta(): Promise<void> {
+  const usuario = auth.currentUser
+  if (!usuario) return
+
+  try {
+    if (await existePerfil(usuario.uid)) return
+    await deleteUser(usuario)
+  } catch (error) {
+    console.error('No se pudo descartar la cuenta incompleta:', error)
+    await signOut(auth).catch(() => {})
+  }
+}
+
+/**
  * Crea la cuenta en Auth. Si el mail ya existe pero el registro quedó a medias
  * (cuenta sin perfil en Firestore), retoma esa cuenta en vez de bloquear al usuario.
  */
@@ -55,6 +74,9 @@ export async function crearOReanudarCuentaEmail(
   email: string,
   password: string,
 ): Promise<ResultadoAuth> {
+  // Una sesión a medias de un intento anterior (por ejemplo, si cerraron la app) no debe estorbar
+  await descartarCuentaIncompleta()
+
   const creada = await ejecutarAuth(() => createUserWithEmailAndPassword(auth, email, password))
   if (creada.ok || creada.codigo !== 'auth/email-already-in-use') return creada
 
@@ -71,35 +93,6 @@ export async function crearOReanudarCuentaEmail(
 export const obtenerUidActual = (): string | null => auth.currentUser?.uid ?? null
 
 export const cerrarSesionFirebase = () => signOut(auth)
-
-/** Manda el correo de verificación de Firebase (con un link) al mail de la cuenta actual. */
-export async function enviarCorreoDeVerificacion(): Promise<void> {
-  const usuario = auth.currentUser
-  if (!usuario) throw new Error('Tu sesión expiró. Volvé a registrarte.')
-
-  auth.languageCode = 'es'
-  try {
-    await sendEmailVerification(usuario)
-  } catch (error) {
-    const codigo = (error as { code?: string }).code ?? ''
-    throw new Error(MENSAJES_AUTH[codigo] ?? 'No se pudo enviar el correo de verificación.')
-  }
-}
-
-/**
- * Consulta a Firebase si el usuario ya tocó el link del correo.
- * Si es así, además refresca el token para que las reglas de Firestore vean email_verified.
- */
-export async function comprobarEmailVerificado(): Promise<boolean> {
-  const usuario = auth.currentUser
-  if (!usuario) return false
-
-  await usuario.reload()
-  if (!usuario.emailVerified) return false
-
-  await usuario.getIdToken(true)
-  return true
-}
 
 export async function cambiarContrasenaActual(
   contrasenaActual: string,

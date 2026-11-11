@@ -18,6 +18,10 @@ export type Pantalla =
   | 'cambiar-dni'
   | 'ajustes'
   | 'historial-canjes'
+  | 'notificaciones'
+  | 'recuperar-email'
+  | 'recuperar-codigo'
+  | 'recuperar-contrasena'
 
 export type ProveedorAuth = 'email' | 'google.com'
 
@@ -38,6 +42,8 @@ export interface FlowData {
   nombre?: string
   dni?: string
   proveedor?: ProveedorAuth
+  /** Recuperación de contraseña: lo da el backend al verificar el código de 8 dígitos. */
+  tokenRecuperacion?: string
 }
 
 export interface AppContextValue {
@@ -55,6 +61,10 @@ export interface AppContextValue {
   mensajeExito?: string
   mostrarExito?: (mensaje: string, duracionMs?: number) => void
   ocultarExito?: () => void
+  /** Notificaciones del usuario logueado, de la más nueva a la más vieja (en tiempo real). */
+  notificaciones: Notificacion[]
+  cargandoNotificaciones: boolean
+  errorNotificaciones: string
 }
 
 export interface Canje {
@@ -81,4 +91,16 @@ export type ValidacionCanje = 'pendiente' | 'finalizado' | 'cancelado'
 export interface CanjePendiente {
   id: string
   vence: Date
+}
+
+export type TipoNotificacion = 'reciclaje' | 'canje' | 'general'
+
+/** USUARIOS/{uid}/NOTIFICACIONES/{id}. Las crean la caja (reciclajes) y el cajero (canjes). */
+export interface Notificacion {
+  id: string
+  tipo: TipoNotificacion
+  titulo: string
+  mensaje: string
+  fecha: Date | null
+  leida: boolean
 }

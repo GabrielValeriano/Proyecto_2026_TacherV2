@@ -14,7 +14,7 @@ import {
 } from 'lucide-react-native'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 
 interface SeccionProps {
   icono: LucideIcon
@@ -245,7 +245,7 @@ const estilos = StyleSheet.create({
   // --- Secciones
   seccion: {
     gap: 10,
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,

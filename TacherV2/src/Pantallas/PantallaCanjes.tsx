@@ -9,7 +9,7 @@ import { BotonPrimario } from 'src/components/BotonPrimario'
 import { useApp } from 'src/context/AppContext'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { useProductos } from 'src/hooks/useProductos'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 import type { Producto } from 'src/types'
 import { EsqueletoProductos } from 'src/components/EsqueletoProductos'
 
@@ -223,7 +223,7 @@ export function PantallaCanjes() {
             {/* Cabecera con botón X a la izquierda y título centrado */}
             <View style={estilos.cabeceraModal}>
               <TouchableOpacity onPress={() => seleccionarProducto(null)} style={estilos.botonCerrar}   activeOpacity={0.7}>
-                <X size={24} color={COLORES.gris900 || '#111827'} />
+                <X size={24} color={COLORES.gris900} />
               </TouchableOpacity>
               <Text style={estilos.tituloCabecera}>Detalle de canje</Text>
               <View style={{ width: 24 }} />
@@ -241,9 +241,9 @@ export function PantallaCanjes() {
                   ]}
                 >
                   {!alcanzanLosPuntos ? (
-                    <Lock size={16} color={COLORES.avisoOscuro || '#7A4A00'} />
+                    <Lock size={16} color={COLORES.avisoOscuro} />
                   ) : (
-                    <Coins size={16} color={COLORES.verde700 || '#047857'} />
+                    <Coins size={16} color={COLORES.verde700} />
                   )}
                   <Text
                     style={[
@@ -433,7 +433,7 @@ const estilos = StyleSheet.create({
   },
   tarjetaProducto: {
     width: '48%',
-    borderRadius: 18,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
@@ -486,10 +486,10 @@ const estilos = StyleSheet.create({
     paddingVertical: 6,
   },
   pildoraPrecioDisponible: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORES.suave,
   },
   pildoraPrecioBloqueado: {
-    backgroundColor: '#FFF1CC',
+    backgroundColor: COLORES.aviso50,
   },
   textoPrecio: {
     fontSize: 14,
@@ -518,15 +518,15 @@ const estilos = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORES.overlay,
     justifyContent: 'flex-end',
     zIndex: 999,
   },
   modalCard: {
     height: '90%',
     backgroundColor: COLORES.blanco,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: RADIOS.grande,
+    borderTopRightRadius: RADIOS.grande,
     overflow: 'hidden',
     flexDirection: 'column',
   },
@@ -537,7 +537,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORES.linea,
   },
   botonCerrar: {
     padding: 4,
@@ -545,7 +545,7 @@ const estilos = StyleSheet.create({
   tituloCabecera: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORES.gris900 || '#111827',
+    color: COLORES.gris900,
   },
   contenidoModal: {
     gap: 20,
@@ -555,7 +555,7 @@ const estilos = StyleSheet.create({
   imagenModal: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORES.verde200 || '#A7F3D0',
+    borderColor: COLORES.verde200,
     height: 450,
     width: '100%',
   },
@@ -568,7 +568,7 @@ const estilos = StyleSheet.create({
     lineHeight: 30,
     fontWeight: '700',
     textAlign: 'center',
-    color: COLORES.gris900 || '#111827',
+    color: COLORES.gris900,
   },
   chipPuntosModal: {
     flexDirection: 'row',
@@ -580,22 +580,22 @@ const estilos = StyleSheet.create({
     paddingVertical: 6,
   },
   chipPuntosDisponible: {
-    backgroundColor: COLORES.verde100 || '#ECFDF5',
-    borderColor: COLORES.verde200 || '#A7F3D0',
+    backgroundColor: COLORES.verde100,
+    borderColor: COLORES.verde200,
   },
   chipPuntosBloqueado: {
-    backgroundColor: '#FFF1CC',
-    borderColor: '#FFE082',
+    backgroundColor: COLORES.aviso50,
+    borderColor: COLORES.aviso200,
   },
   textoPuntosModal: {
     fontSize: 14,
     fontWeight: '700',
   },
   textoPuntosDisponible: {
-    color: COLORES.verde700 || '#047857',
+    color: COLORES.verde700,
   },
   textoPuntosBloqueado: {
-    color: COLORES.avisoOscuro || '#7A4A00',
+    color: COLORES.avisoOscuro,
   },
   seccionDescripcionModal: {
     alignItems: 'center',
@@ -604,7 +604,7 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
-    color: COLORES.gris600 || '#4B5563',
+    color: COLORES.gris600,
   },
   seccionFaltantesModal: {
     gap: 8,
@@ -612,36 +612,36 @@ const estilos = StyleSheet.create({
   },
   barraProgresoFondo: {
     height: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORES.gris200,
     borderRadius: 4,
     overflow: 'hidden',
   },
   barraProgresoRellenaAmarilla: {
     height: '100%',
-    backgroundColor: '#F59E0B', // Color amarillo/ámbar de advertencia
+    backgroundColor: COLORES.aviso500, // Ámbar de aviso
     borderRadius: 4,
   },
   avisoPuntosModal: {
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '500',
-    color: COLORES.gris600 || '#4B5563',
+    color: COLORES.gris600,
   },
   textoResaltadoFaltante: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#D97706', // Amarillo oscuro / ámbar resaltado
+    color: COLORES.avisoOscuro, // Ámbar oscuro, resaltado
   },
   pieModal: {
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
   botonSecundarioModal: {
-    borderRadius: 9999,
+    borderRadius: RADIOS.boton,
     borderWidth: 1.5,
     borderColor: COLORES.principal,
     backgroundColor: COLORES.blanco,

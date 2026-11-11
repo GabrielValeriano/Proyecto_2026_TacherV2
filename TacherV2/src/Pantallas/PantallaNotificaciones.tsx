@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { Bell, Gift, Recycle, type LucideIcon } from 'lucide-react-native'
-import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { EsqueletoReciclajes } from 'src/components/EsqueletoReciclajes'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
-import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { marcarComoLeidas } from 'src/services/notificaciones'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 import type { Notificacion, TipoNotificacion } from 'src/types'
 import { formatearHaceCuanto } from 'src/utils/fechas'
 
@@ -84,7 +82,6 @@ function EstadoVacio() {
 export function PantallaNotificaciones() {
   const { navigate, userData, notificaciones, cargandoNotificaciones, errorNotificaciones } =
     useApp()
-  const handleTabPress = useNavegacionPestañas()
   const uid = userData?.id
 
   // Las que estaban sin leer al entrar (o llegaron con la pantalla abierta) se resaltan
@@ -120,7 +117,6 @@ export function PantallaNotificaciones() {
         contentContainerStyle={estilos.contenido}
         showsVerticalScrollIndicator={false}
       />
-      <BarraDeNavegacion activeTab="home" onTabPress={handleTabPress} />
     </View>
   )
 }
@@ -212,7 +208,7 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 14,
-    borderRadius: 20,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,

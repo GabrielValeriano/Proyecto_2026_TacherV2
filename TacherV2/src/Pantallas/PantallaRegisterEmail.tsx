@@ -12,14 +12,16 @@ import { SeparadorO } from 'src/components/SeparadorO'
 import { useApp } from 'src/context/AppContext'
 import { validarCredencialesRegistro } from 'src/domain/validaciones'
 import { useErrorDeFormulario } from 'src/hooks/useErrorDeFormulario'
+import { useFormularioLimpio } from 'src/hooks/useFormularioLimpio'
 import { useGoogleAuthFlow } from 'src/hooks/useGoogleAuthFlow'
 import { crearOReanudarCuentaEmail } from 'src/services/autenticacion'
 import { COLORES } from 'src/theme'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaRegisterEmail() {
-  const { navigate, actualizarFlowData, flowData } = useApp()
-  const [email, setEmail] = useState(flowData.email ?? '')
+  const { navigate, actualizarFlowData } = useApp()
+  useFormularioLimpio()
+  const [email, setEmail] = useState('')
   const [contra, setContra] = useState('')
   const [confirmacion, setConfirmacion] = useState('')
   const [loading, setLoading] = useState(false)

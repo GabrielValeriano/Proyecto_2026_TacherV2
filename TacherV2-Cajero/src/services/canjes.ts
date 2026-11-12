@@ -1,9 +1,20 @@
-import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { db } from 'src/firebase'
 import { enviarPush } from 'src/services/push'
 
 export type ResultadoCanje =
-  | { ok: true; producto: string; cliente: string; puntos: number }
+  | {
+      ok: true
+      producto: string
+      cliente: string
+      puntos: number
+      /** Código único del canje (el id del documento en CANJES, el mismo que tiene el QR). */
+      codigo: string
+      /** Cuándo lo validó el cajero. */
+      fecha: Date
+      /** Foto del producto, si se encuentra en PRODUCTOS. */
+      imagen: string | null
+    }
   | { ok: false; mensaje: string }
 
 /** Los ids que genera Firestore son 20 letras y números. Cualquier otro QR no es un canje. */
@@ -40,7 +51,21 @@ type ResultadoInterno =
       resultado: Extract<ResultadoCanje, { ok: true }>
       tokensCliente: string[]
       aviso: { titulo: string; mensaje: string }
+      productoId: string | null
     }
+
+/** La foto del producto para el comprobante. Si no se encuentra, el comprobante muestra un ícono. */
+async function imagenDelProducto(productoId: string | null): Promise<string | null> {
+  if (!productoId) return null
+  try {
+    const snap = await getDoc(doc(db, 'PRODUCTOS', productoId))
+    const imagen = String(snap.get('Imagen') ?? '').trim()
+    return imagen || null
+  } catch (error) {
+    console.warn('No se pudo cargar la foto del producto:', error)
+    return null
+  }
+}
 
 export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
   const id = codigo.trim()
@@ -120,7 +145,11 @@ export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
           producto,
           cliente: String(canje.Usuario ?? 'Cliente'),
           puntos: puntosDelCanje,
+          codigo: String(canje.Codigo ?? id),
+          fecha: new Date(),
+          imagen: null,
         },
+        productoId: typeof canje.ProductoId === 'string' ? canje.ProductoId : null,
         tokensCliente: Array.isArray(cliente.ExpoPushTokens) ? cliente.ExpoPushTokens : [],
         aviso,
       }
@@ -132,5 +161,5 @@ export async function finalizarCanje(codigo: string): Promise<ResultadoCanje> {
   if (!interno.ok) return interno
   // Sin await: el cajero ve el resultado al instante, el push sale en segundo plano
   enviarPush(interno.tokensCliente, interno.aviso)
-  return interno.resultado
+  return { ...interno.resultado, imagen: await imagenDelProducto(interno.productoId) }
 }

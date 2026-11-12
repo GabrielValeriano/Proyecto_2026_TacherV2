@@ -8,9 +8,9 @@ const LARGO_CODIGO = 8;
 // Cuenta de EmailJS. Se puede cambiar desde el .env.
 const EMAILJS = {
   url: 'https://api.emailjs.com/api/v1.0/email/send',
-  serviceId: process.env.EMAILJS_SERVICE_ID || 'service_zbwfi2e',
-  templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_nsfs7b1',
-  publicKey: process.env.EMAILJS_PUBLIC_KEY || 'qPBhMhwXdDurztFHm',
+  serviceId: process.env.EMAILJS_SERVICE_ID || 'service_4m2o3n6',
+  templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_nlh8eol',
+  publicKey: process.env.EMAILJS_PUBLIC_KEY || '1TFer_oiC2ciRVMcB',
 };
 
 const hash = (texto) => crypto.createHash('sha256').update(texto).digest('hex');

@@ -1,41 +1,37 @@
-import { Box, Recycle, Trash2 } from 'lucide-react-native'
+import type { ComponentType } from 'react'
+import { Package, Recycle } from 'lucide-react-native'
+import { IconoBotella } from 'src/components/IconoBotella'
+import { IconoLata } from 'src/components/IconoLata'
+import { materialDelResiduo, type Material } from 'src/domain/materiales'
 import { COLORES } from 'src/theme'
 
-function normalizar(texto?: string | null) {
-  if (!texto) return ''
-  return texto
-    .toString()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
+type IconoMaterial = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>
+
+export interface EstiloMaterial {
+  Icono: IconoMaterial
+  /** Color del ícono. */
+  color: string
+  /** Fondo del círculo que lo contiene. */
+  fondo: string
+  /** Nombre para mostrar ("Botella", "Lata", "Cartón"), o null si no se reconoce. */
+  etiqueta: string | null
 }
 
-export function obtenerIconoCategoria(categoria?: string | null, residuo?: string | null) {
-  const cat = normalizar(categoria)
-  const res = normalizar(residuo)
+const ESTILOS: Record<Material, EstiloMaterial> = {
+  botella: { Icono: IconoBotella, color: COLORES.principalOscuro, fondo: COLORES.suave, etiqueta: 'Botella' },
+  lata: { Icono: IconoLata, color: COLORES.oscuro, fondo: 'rgba(183,227,75,0.32)', etiqueta: 'Lata' },
+  carton: { Icono: Package, color: COLORES.avisoOscuro, fondo: COLORES.aviso50, etiqueta: 'Cartón' },
+}
 
-  const esBotella = ['botella', 'botellas', 'botella_plastico', 'pet', 'plastico_botella'].some(
-    (clave) => cat === clave || cat.includes(clave) || res.includes(clave),
-  )
-  if (esBotella) {
-    return { Icono: Trash2, color: COLORES.principal }
-  }
+const GENERICO: EstiloMaterial = {
+  Icono: Recycle,
+  color: COLORES.principal,
+  fondo: COLORES.fondo,
+  etiqueta: null,
+}
 
-  const esLata = ['lata', 'latas', 'aluminio', 'aluminio_lata', 'lata_aluminio'].some(
-    (clave) => cat === clave || cat.includes(clave) || res.includes(clave),
-  )
-  if (esLata) {
-    return { Icono: Trash2, color: COLORES.principalOscuro }
-  }
-
-  const esCarton = ['carton', 'carton_corrugado', 'papel_carton', 'caja', 'cajas'].some(
-    (clave) => cat === clave || cat.includes(clave) || res.includes(clave),
-  )
-  if (esCarton) {
-    return { Icono: Box, color: COLORES.oscuro }
-  }
-
-  return { Icono: Recycle, color: COLORES.textoSuave }
+/** Ícono, colores y nombre del material para mostrar un reciclaje. */
+export function obtenerIconoCategoria(categoria?: string | null, residuo?: string | null): EstiloMaterial {
+  const material = materialDelResiduo(categoria, residuo)
+  return material ? ESTILOS[material] : GENERICO
 }

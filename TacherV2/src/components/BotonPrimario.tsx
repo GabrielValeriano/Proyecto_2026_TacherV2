@@ -1,9 +1,9 @@
-import React, { type ReactNode } from 'react'
+import React, { useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   type StyleProp,
   type ViewStyle,
 } from 'react-native'
@@ -32,6 +32,7 @@ export function BotonPrimario({
   variante = 'solido',
   style,
 }: Props) {
+  const [presionado, setPresionado] = useState(false)
   const { boton, texto, spinner } = {
     solido: { boton: estilos.botonSolido, texto: estilos.textoClaro, spinner: COLORES.blanco },
     contorno: { boton: estilos.botonContorno, texto: estilos.textoVerde, spinner: COLORES.verde600 },
@@ -39,17 +40,22 @@ export function BotonPrimario({
   }[variante]
 
   return (
-    <Pressable
+    // TouchableOpacity (no Pressable con style en función): NativeWind envuelve Pressable y
+    // puede perder ese estilo. El "presionado" se lleva con un estado.
+    <TouchableOpacity
+      activeOpacity={0.85}
       onPress={onPress}
+      onPressIn={() => setPresionado(true)}
+      onPressOut={() => setPresionado(false)}
       disabled={loading || disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: loading || disabled, busy: loading }}
-      style={({ pressed }) => [
+      style={[
         estilos.boton,
         boton,
         disabled && estilos.botonDeshabilitado,
-        pressed && estilos.botonPresionado,
+        presionado && estilos.botonPresionado,
         style,
       ]}
     >
@@ -58,10 +64,15 @@ export function BotonPrimario({
       ) : (
         <>
           {icon}
-          <Text style={[estilos.texto, texto, disabled && estilos.textoDeshabilitado]}>{label}</Text>
+          <Text
+            style={[estilos.texto, texto, disabled && estilos.textoDeshabilitado]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
         </>
       )}
-    </Pressable>
+    </TouchableOpacity>
   )
 }
 

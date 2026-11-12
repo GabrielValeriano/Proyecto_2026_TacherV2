@@ -1,44 +1,29 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { Gift } from 'lucide-react-native'
+import { CabeceraHistorial } from 'src/components/CabeceraHistorial'
 import { EsqueletoReciclajes } from 'src/components/EsqueletoReciclajes'
 import { ImagenProducto } from 'src/components/ImagenProducto'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
 import { useHistorialCanjesPaginado } from 'src/hooks/useHistorialCanjesPaginado'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { useTotalesHistorial } from 'src/hooks/useTotalesHistorial'
+import { obtenerTotalesCanjes } from 'src/services/canjes'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 import { formatearFecha } from 'src/utils/fechas'
 import type { CanjeHistorial } from 'src/services/canjes'
 
-function TarjetaResumen({
-  totalCanjes,
-  totalPuntosCanjeados,
-}: {
-  totalCanjes: number
-  totalPuntosCanjeados: number
-}) {
+/** Un canje en su propia tarjeta: foto del producto, nombre y fecha, y los puntos usados. */
+function ItemCanje({ canje }: { canje: CanjeHistorial }) {
+  const puntos = canje.puntosCanjeados.toLocaleString('es-AR')
+  const fecha = formatearFecha(canje.fecha)
   return (
-    <View style={estilos.tarjetaResumen}>
-      <Text style={estilos.tarjetaTitulo}>Resumen</Text>
-      <View style={estilos.resumenFila}>
-        <View style={estilos.resumenItem}>
-          <Text style={estilos.resumenEtiqueta}>Total canjes</Text>
-          <Text style={estilos.resumenValor}>{totalCanjes.toLocaleString('es-AR')}</Text>
-        </View>
-        <View style={estilos.resumenSeparador} />
-        <View style={estilos.resumenItem}>
-          <Text style={estilos.resumenEtiqueta}>Puntos canjeados</Text>
-          <Text style={estilos.resumenValorVerde}>-{totalPuntosCanjeados.toLocaleString('es-AR')}</Text>
-        </View>
-      </View>
-    </View>
-  )
-}
-
-function ItemCanje({ canje, conDivisor }: { canje: CanjeHistorial; conDivisor: boolean }) {
-  return (
-    <View style={[estilos.fila, conDivisor && estilos.filaConDivisor]}>
+    <View
+      style={estilos.tarjeta}
+      accessible
+      accessibilityLabel={`${canje.producto}, ${fecha}, menos ${puntos} puntos`}
+    >
       <View style={estilos.imagenContenedor}>
         <ImagenProducto uri={canje.imagen ?? null} tamañoIcono={26} style={estilos.imagen} />
       </View>
@@ -47,12 +32,19 @@ function ItemCanje({ canje, conDivisor }: { canje: CanjeHistorial; conDivisor: b
         <Text style={estilos.producto} numberOfLines={1}>
           {canje.producto}
         </Text>
-        <Text style={estilos.fecha}>{formatearFecha(canje.fecha)}</Text>
+        <View style={estilos.detalle}>
+          <View style={estilos.chip}>
+            <Text style={estilos.chipTexto}>Canjeado</Text>
+          </View>
+          <Text style={estilos.fecha} numberOfLines={1}>
+            {fecha}
+          </Text>
+        </View>
       </View>
 
       <View style={estilos.puntosPildora}>
-        <Text style={estilos.puntosNumero}>-{canje.puntosCanjeados.toLocaleString('es-AR')}</Text>
-        <Text style={estilos.puntosUnidad}>puntos</Text>
+        <Text style={estilos.puntosNumero}>-{puntos}</Text>
+        <Text style={estilos.puntosUnidad}>pts</Text>
       </View>
     </View>
   )
@@ -87,24 +79,26 @@ export function PantallaHistorialCanjes() {
   const { canjes, cargandoInicial, cargandoMas, error, hayMas, refrescando, cargarMas, refrescar } =
     useHistorialCanjesPaginado(userData?.id, 10)
 
-  const { totalCanjes, totalPuntosCanjeados } = useMemo(() => {
-    const totalCanjes = canjes.length
-    const totalPuntosCanjeados = canjes.reduce((acc, item) => acc + (Number(item.puntosCanjeados) || 0), 0)
-    return { totalCanjes, totalPuntosCanjeados }
-  }, [canjes])
+  // Totales de todo el historial (la lista se carga de a 10: sumarla daría un número incompleto)
+  const totales = useTotalesHistorial(obtenerTotalesCanjes, userData?.id, refrescando)
 
-  const renderItem = ({ item, index }: { item: CanjeHistorial; index: number }) => (
-    <ItemCanje canje={item} conDivisor={index < canjes.length - 1} />
-  )
+  const renderItem = ({ item }: { item: CanjeHistorial }) => <ItemCanje canje={item} />
 
   const renderHeader = () => (
-    <View style={estilos.headerContenido}>
-      <View style={estilos.encabezado}>
-        <Text style={estilos.titulo}>Historial</Text>
-        <Text style={estilos.subtitulo}>Tus productos canjeados</Text>
-      </View>
-      <TarjetaResumen totalCanjes={totalCanjes} totalPuntosCanjeados={totalPuntosCanjeados} />
-    </View>
+    <CabeceraHistorial
+      icono={Gift}
+      etiqueta="Historial"
+      titulo="Tus canjes"
+      descripcion="Los productos que retiraste en el kiosco con tus puntos."
+      metricas={[
+        {
+          etiqueta: totales?.cantidad === 1 ? 'Canje' : 'Canjes',
+          valor: totales ? totales.cantidad.toLocaleString('es-AR') : '—',
+        },
+        { etiqueta: 'Puntos gastados', valor: totales ? `-${totales.puntos.toLocaleString('es-AR')}` : '—' },
+      ]}
+      tituloLista="Canjes recientes"
+    />
   )
 
   const renderEmpty = () => {
@@ -154,87 +148,40 @@ const estilos = StyleSheet.create({
     paddingBottom: 24,
     flexGrow: 1,
   },
-  headerContenido: {
-    gap: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  encabezado: {
-    gap: 4,
-  },
-  titulo: {
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.8,
-    color: COLORES.texto,
-  },
-  subtitulo: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORES.textoSuave,
-  },
-  tarjetaResumen: {
-    borderRadius: 24,
+  tarjeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 10,
+    borderRadius: RADIOS.medio,
     borderWidth: 1,
     borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
-    padding: 18,
-    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     ...SOMBRAS.chica,
   },
-  tarjetaTitulo: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: COLORES.texto,
-  },
-  resumenFila: {
+  detalle: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  resumenItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
+  chip: {
+    borderRadius: RADIOS.pildora,
+    backgroundColor: COLORES.aviso50,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  resumenSeparador: {
-    width: 1,
-    height: 48,
-    backgroundColor: COLORES.linea,
-  },
-  resumenEtiqueta: {
-    fontSize: 14,
-    lineHeight: 18,
-    color: COLORES.textoSuave,
-  },
-  resumenValor: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: COLORES.texto,
-  },
-  resumenValorVerde: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: COLORES.principal,
-  },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  filaConDivisor: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORES.linea,
+  chipTexto: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '800',
+    color: COLORES.avisoOscuro,
   },
   imagenContenedor: {
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: RADIOS.medio,
     overflow: 'hidden',
     backgroundColor: COLORES.suave,
   },
@@ -244,32 +191,33 @@ const estilos = StyleSheet.create({
   },
   filaTextos: {
     flex: 1,
-    gap: 2,
+    gap: 5,
   },
   producto: {
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '700',
     color: COLORES.texto,
   },
   fecha: {
-    fontSize: 14,
+    flexShrink: 1,
+    fontSize: 13,
     lineHeight: 18,
     color: COLORES.textoSuave,
   },
   puntosPildora: {
-    minWidth: 68,
+    minWidth: 60,
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: RADIOS.chico,
     backgroundColor: COLORES.suave,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   puntosNumero: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: COLORES.verde700,
+    fontSize: 17,
+    lineHeight: 21,
+    fontWeight: '800',
+    color: COLORES.principalOscuro,
   },
   puntosUnidad: {
     fontSize: 11,
@@ -286,7 +234,7 @@ const estilos = StyleSheet.create({
     height: 88,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 28,
+    borderRadius: RADIOS.grande,
     backgroundColor: COLORES.suave,
   },
   vacioTitulo: {

@@ -164,10 +164,9 @@ function BotonCerrarSesion({ onPress }: { onPress: () => void }) {
 
 
 export function PantallaPerfil() {
-  const { userData, navigate, cerrarSesion } = useApp()
+  const { userData, navigate, cerrarSesion, cerrandoSesion } = useApp()
   const handleTabPress = useNavegacionPestañas()
   const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false)
-  const [cerrandoSesion, setCerrandoSesion] = useState(false)
 
   const puntos = Number(userData?.Puntos) || 0
   // El rango sale de los reciclajes, igual que en el Home
@@ -186,13 +185,9 @@ export function PantallaPerfil() {
   }
 
   const handleConfirmarCerrarSesion = () => {
-    setCerrandoSesion(true)
-    try {
-      cerrarSesion()
-    } finally {
-      setModalCerrarSesionVisible(false)
-      setCerrandoSesion(false)
-    }
+    // Se cierra la confirmación y se pasa a la pantalla de carga de "Cerrando sesión…"
+    setModalCerrarSesionVisible(false)
+    cerrarSesion()
   }
 
   return (

@@ -19,6 +19,7 @@ import {
 import { db } from 'src/firebase'
 import type { Canje, CanjePendiente, Producto, ValidacionCanje } from 'src/types'
 import { obtenerProductosDisponibles } from 'src/services/productos'
+import type { TotalesHistorial } from 'src/services/reciclajes'
 
 const COLECCION_CANJES = 'CANJES'
 
@@ -63,9 +64,11 @@ function obtenerValor(datos: DocumentData, ...claves: string[]) {
 
 function aCanje(docSnap: { id: string; data: () => DocumentData }): Canje {
   const datos = docSnap.data()
+  const productoId = obtenerValor(datos, CAMPOS.productoId)
   return {
     id: docSnap.id,
     producto: String(obtenerValor(datos, CAMPOS.producto) ?? '—'),
+    productoId: productoId ? String(productoId) : undefined,
     puntosCanjeados: Number(obtenerValor(datos, CAMPOS.puntosCanjeados)) || 0,
     codigo: String(obtenerValor(datos, CAMPOS.codigo) ?? '—'),
     fecha: aFecha(obtenerValor(datos, CAMPOS.fecha)),
@@ -182,6 +185,20 @@ export async function obtenerHistorialCanjesPaginado(
   const nextCursor = hayMas && docsAMostrar.length > 0 ? docsAMostrar[docsAMostrar.length - 1] : null
 
   return { items: canjes, nextCursor, hayMas }
+}
+
+/** Cantidad de canjes confirmados y puntos gastados en total. */
+export async function obtenerTotalesCanjes(uid: string): Promise<TotalesHistorial> {
+  const docs = await obtenerDocsPorUid(uid)
+  const confirmados = docs.filter((docSnap) => {
+    const validacion = obtenerValor(docSnap.data(), CAMPOS.validacion)
+    return validacion === undefined || validacion === null || validacion === 'finalizado'
+  })
+  const puntos = confirmados.reduce(
+    (total, docSnap) => total + (Number(obtenerValor(docSnap.data(), CAMPOS.puntosCanjeados)) || 0),
+    0,
+  )
+  return { cantidad: confirmados.length, puntos }
 }
 
 export async function obtenerHistorialCanjesSimple(uid: string, cantidad = 20): Promise<CanjeHistorial[]> {

@@ -5,6 +5,7 @@ import { escucharUsuario } from 'src/services/usuarios'
 import type { AppContextValue, FlowData, Notificacion, Pantalla, Usuario, Producto } from 'src/types'
 import { auth } from 'src/firebase'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
+import { cerrarSesionGoogle } from 'src/services/googleAuth'
 import { existePerfil } from 'src/services/usuarios'
 import { precargarDatos } from 'src/services/precarga'
 import { limpiarCache } from 'src/utils/cache'
@@ -149,16 +150,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const actualizarFlowData = (parcial: FlowData) =>
     setFlowData((anterior) => ({ ...anterior, ...parcial }))
 
-  const cerrarSesion = () => {
+  const reiniciarRegistro = useCallback(() => setFlowData({}), [])
+
+  const [cerrandoSesion, setCerrandoSesion] = useState(false)
+
+  /**
+   * Cierra la sesión mostrando la pantalla de carga de la app durante 2 segundos. Mientras tanto se
+   * borra todo lo local (el teléfono deja de recibir avisos de esta cuenta, la sesión de Firebase
+   * y de Google, y el caché). Después se vuelve a la bienvenida.
+   */
+  const cerrarSesion = async () => {
+    if (cerrandoSesion) return
+    setCerrandoSesion(true)
     const uid = userDocId
-    // Primero se desasocia el teléfono (necesita la sesión activa) y después se cierra la sesión
-    ;(uid ? quitarDispositivoDePush(uid) : Promise.resolve())
-      .then(() => cerrarSesionFirebase())
-      .catch((error) => console.error('Error al cerrar sesión:', error))
+
+    const limpiar = async () => {
+      try {
+        // Primero se desasocia el teléfono (necesita la sesión activa)
+        if (uid) await quitarDispositivoDePush(uid)
+      } catch (error) {
+        console.error('No se pudo desasociar el teléfono de los avisos:', error)
+      }
+      try {
+        // Borra el token de la sesión guardado en el teléfono (AsyncStorage)
+        await cerrarSesionFirebase()
+      } catch (error) {
+        console.error('Error al cerrar la sesión de Firebase:', error)
+      }
+      await cerrarSesionGoogle()
+      limpiarCache()
+    }
+
+    // La pantalla de carga se ve 2 segundos (o lo que tarde la limpieza, si es más)
+    await Promise.all([limpiar(), new Promise((listo) => setTimeout(listo, 2000))])
+
     setUserDocId(null)
     setFlowData({})
+    setProductoSeleccionado(null)
+    setPantallaAnterior(null)
     setPantallaActual('welcome')
-    limpiarCache()
+    setCerrandoSesion(false)
   }
 
   const seleccionarProducto = (producto: Producto | null) => {
@@ -184,8 +215,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         navigate,
         abrirEnDesarrollo,
         actualizarFlowData,
+        reiniciarRegistro,
         setUserDocId,
         cerrarSesion,
+        cerrandoSesion,
         productoSeleccionado,
         seleccionarProducto,
         mensajeExito,
@@ -196,7 +229,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         errorNotificaciones,
       }}
     >
-      {cargandoSesion ? <PantallaCarga/> : children}
+      {cargandoSesion ? (
+        <PantallaCarga />
+      ) : cerrandoSesion ? (
+        // La misma pantalla de carga de la app, a pantalla completa, mientras se borra todo
+        <PantallaCarga mensaje="Cerrando sesión y borrando datos locales…" />
+      ) : (
+        children
+      )}
     </AppContext.Provider>
   )
 }

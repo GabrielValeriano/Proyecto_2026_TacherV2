@@ -14,7 +14,7 @@ import { ReciboDeCanje } from '@/src/Pantallas/ReciboDeCanje'
 import { configurarGoogleSignIn } from 'src/services/googleAuth'
 import type { Pantalla } from 'src/types'
 import { PantallaCanjes } from 'src/Pantallas/PantallaCanjes'
-import { PantallaSeleccionarProducto } from 'src/Pantallas/PantallaSeleccionarProducto'
+import { PantallaDetalleCanje } from 'src/Pantallas/PantallaDetalleCanje'
 import { PantallaGenerarQr } from 'src/Pantallas/PantallaGenerarQr'
 import { PantallaHistorialReciclajes } from '@/src/Pantallas/PantallaHistorialReciclajes'
 import { PantallaRanking } from '@/src/Pantallas/PantallaRanking'
@@ -42,7 +42,7 @@ const PANTALLAS: Record<Pantalla, ComponentType> = {
   'recibo-canje': ReciboDeCanje,
   'en-desarrollo': PantallaEnDesarrollo,
   'canjes': PantallaCanjes,
-  'seleccionar-producto': PantallaSeleccionarProducto,
+  'seleccionar-producto': PantallaDetalleCanje,
   'generar-qr': PantallaGenerarQr,
   'historial-reciclajes': PantallaHistorialReciclajes,
   'ranking': PantallaRanking,

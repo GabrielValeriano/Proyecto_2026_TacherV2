@@ -12,6 +12,7 @@ import { TituloDePantalla } from 'src/components/TituloDePantalla'
 import { SeparadorO } from 'src/components/SeparadorO'
 import { useApp } from 'src/context/AppContext'
 import { useErrorDeFormulario } from 'src/hooks/useErrorDeFormulario'
+import { useFormularioLimpio } from 'src/hooks/useFormularioLimpio'
 import { useGoogleAuthFlow } from 'src/hooks/useGoogleAuthFlow'
 import { iniciarSesionConEmail } from 'src/services/autenticacion'
 import { existePerfil } from 'src/services/usuarios'
@@ -19,8 +20,9 @@ import { COLORES } from 'src/theme'
 import { PantallaCarga } from 'src/Pantallas/PantallaCarga'
 
 export function PantallaLoginEmail() {
-  const { navigate, actualizarFlowData, flowData, setUserDocId } = useApp()
-  const [email, setEmail] = useState(flowData.email ?? '')
+  const { navigate, actualizarFlowData, setUserDocId } = useApp()
+  useFormularioLimpio()
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { error, setError, limpiarAlEditar } = useErrorDeFormulario()

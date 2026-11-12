@@ -60,8 +60,12 @@ export interface AppContextValue {
   navigate: (pantalla: Pantalla) => void
   abrirEnDesarrollo: (seccion: string) => void
   actualizarFlowData: (parcial: FlowData) => void
+  /** Borra los datos del registro en curso (email, DNI, nombre...). */
+  reiniciarRegistro: () => void
   setUserDocId: (id: string | null) => void
-  cerrarSesion: () => void
+  /** Cierra la sesión y borra los datos locales; mientras tanto se ve la pantalla de carga. */
+  cerrarSesion: () => Promise<void>
+  cerrandoSesion: boolean
   productoSeleccionado: Producto | null
   seleccionarProducto: (producto: Producto | null) => void
   mensajeExito?: string
@@ -76,6 +80,8 @@ export interface AppContextValue {
 export interface Canje {
   id: string
   producto: string
+  /** Id del producto en PRODUCTOS (para mostrar su foto y categoría), si el canje lo guardó. */
+  productoId?: string
   puntosCanjeados: number
   codigo: string
   /** Date si Firestore la guarda como fecha; string si viene como texto no parseable. */

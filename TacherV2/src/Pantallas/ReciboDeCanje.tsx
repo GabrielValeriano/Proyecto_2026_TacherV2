@@ -1,144 +1,179 @@
-import React, { useEffect, useRef } from 'react'
-import {
-  ActivityIndicator,
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import { Check } from 'lucide-react-native'
+import React, { useState } from 'react'
+import { ActivityIndicator, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { CalendarClock, Coins, Hash, Wallet, type LucideIcon } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
+import { IconoExito } from 'src/components/IconoExito'
+import { ImagenProducto } from 'src/components/ImagenProducto'
 import { MensajeError } from 'src/components/MensajeError'
+import { TituloDePantalla } from 'src/components/TituloDePantalla'
+import { CapaVerde, EntradaSuave, useTransicionVerde } from 'src/components/TransicionVerde'
 import { useApp } from 'src/context/AppContext'
+import { useProductos } from 'src/hooks/useProductos'
 import { useUltimoCanje } from 'src/hooks/useUltimoCanje'
-import { COLORES } from 'src/theme'
-import type { Canje } from 'src/types'
+import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
+import type { Canje, Producto } from 'src/types'
 import { formatearFecha } from 'src/utils/fechas'
 
 const formatearPuntos = (puntos: number) => puntos.toLocaleString('es-AR')
 
-function IconoExito() {
-  const escala = useRef(new Animated.Value(0.4)).current
+// ---------------------------------------------------------------------------
+// Bloques del recibo
+// ---------------------------------------------------------------------------
 
-  useEffect(() => {
-    Animated.spring(escala, { toValue: 1, friction: 4, useNativeDriver: true }).start()
-  }, [escala])
-
-  const opacidad = escala.interpolate({
-    inputRange: [0.4, 1],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  })
-
+function Encabezado() {
   return (
-    <Animated.View style={{ transform: [{ scale: escala }], opacity: opacidad }}>
-      <View style={estilos.iconoExito}>
-        <Check size={44} strokeWidth={3} color={COLORES.blanco} />
-      </View>
-    </Animated.View>
-  )
-}
-
-function EncabezadoExito() {
-  return (
-    <View style={estilos.encabezadoExito}>
+    <View style={estilos.encabezado}>
       <IconoExito />
-      <Text style={estilos.tituloExito}>¡Canje exitoso!</Text>
-      <Text style={estilos.subtituloExito}>
-        Mostrá este recibo para retirar tu producto en el kiosco.
+      <View accessibilityRole="header">
+        <TituloDePantalla texto="¡Canje exitoso!" />
+      </View>
+      <Text style={estilos.descripcion}>
+        El cajero ya validó tu canje y te entregó el producto. ¡Gracias por reciclar!
       </Text>
     </View>
   )
 }
 
-function FilaRecibo({
-  label,
-  value,
-  esCodigo = false,
+function TarjetaProducto({ canje, producto }: { canje: Canje; producto?: Producto }) {
+  return (
+    <View style={estilos.tarjeta}>
+      <Text style={estilos.etiquetaBloque}>Producto canjeado</Text>
+      <View style={estilos.productoFila}>
+        <View style={estilos.productoImagen}>
+          <ImagenProducto uri={producto?.imagen ?? null} tamañoIcono={26} style={estilos.productoImagenInterna} />
+        </View>
+        <View style={estilos.productoTextos}>
+          <Text style={estilos.productoNombre} numberOfLines={2}>
+            {canje.producto}
+          </Text>
+          {producto?.categoria ? (
+            <View style={estilos.chipCategoria}>
+              <Text style={estilos.chipCategoriaTexto}>{producto.categoria}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function Fila({
+  icono: Icono,
+  etiqueta,
+  children,
+  ultima = false,
 }: {
-  label: string
-  value: string
-  esCodigo?: boolean
+  icono: LucideIcon
+  etiqueta: string
+  children: React.ReactNode
+  ultima?: boolean
 }) {
   return (
-    <View style={estilos.fila}>
-      <Text style={estilos.filaEtiqueta}>{label}</Text>
-      <Text style={[estilos.filaValor, esCodigo && estilos.filaCodigo]}>{value}</Text>
+    <View style={[estilos.fila, !ultima && estilos.filaConDivisor]}>
+      <View style={estilos.filaIzquierda}>
+        <View style={estilos.filaIcono}>
+          <Icono size={16} color={COLORES.verde700} />
+        </View>
+        <Text style={estilos.filaEtiqueta}>{etiqueta}</Text>
+      </View>
+      {children}
     </View>
   )
 }
 
-function ComprobanteDeCanje({ canje, puntosActuales }: { canje: Canje; puntosActuales: number }) {
+function ResumenTransaccion({ canje, puntosActuales }: { canje: Canje; puntosActuales: number }) {
   return (
-    <View style={estilos.comprobante}>
-      <View style={estilos.comprobanteFilas}>
-        <FilaRecibo label="Producto" value={canje.producto} />
-        <FilaRecibo
-          label="Puntos canjeados"
-          value={`-${formatearPuntos(Math.abs(canje.puntosCanjeados))}`}
-        />
-        <FilaRecibo label="Puntos actuales" value={formatearPuntos(puntosActuales)} />
-        <FilaRecibo label="Código" value={canje.codigo} esCodigo />
-        <FilaRecibo label="Fecha" value={formatearFecha(canje.fecha)} />
-      </View>
-
-      <View style={estilos.insignia}>
-        <Check size={16} color={COLORES.verde} />
-        <Text style={estilos.insigniaTexto}>Producto entregado</Text>
+    <View style={estilos.tarjeta}>
+      <Text style={estilos.etiquetaBloque}>Detalle de la operación</Text>
+      <View>
+        <Fila icono={Coins} etiqueta="Puntos descontados">
+          <Text style={estilos.valorDestacado}>-{formatearPuntos(Math.abs(canje.puntosCanjeados))} pts</Text>
+        </Fila>
+        <Fila icono={Wallet} etiqueta="Saldo actual">
+          <Text style={estilos.valor}>{formatearPuntos(puntosActuales)} pts</Text>
+        </Fila>
+        <Fila icono={CalendarClock} etiqueta="Fecha y hora">
+          <Text style={estilos.valor}>{formatearFecha(canje.fecha)}</Text>
+        </Fila>
+        <Fila icono={Hash} etiqueta="Código de operación" ultima>
+          <View style={estilos.codigoPastilla}>
+            <Text style={estilos.codigoTexto} selectable numberOfLines={1}>
+              {canje.codigo}
+            </Text>
+          </View>
+        </Fila>
       </View>
     </View>
   )
 }
 
-interface ContenidoProps {
-  canje: Canje | null
-  puntosActuales: number
-  cargando: boolean
-  error: string
-}
-
-function Contenido({ canje, puntosActuales, cargando, error }: ContenidoProps) {
-  if (cargando) {
-    return <ActivityIndicator size="large" color={COLORES.verde} style={estilos.cargando} />
-  }
-  if (error) return <MensajeError message={error} />
-  if (!canje) {
-    return (
-      <View style={estilos.sinCanjes}>
-        <Text style={estilos.sinCanjesTitulo}>Todavía no tenés canjes</Text>
-        <Text style={estilos.sinCanjesTexto}>
-          Cuando canjees un producto, tu recibo va a aparecer acá.
-        </Text>
-      </View>
-    )
-  }
-
-  return (
-    <View>
-      <EncabezadoExito />
-      <ComprobanteDeCanje canje={canje} puntosActuales={puntosActuales} />
-    </View>
-  )
-}
+// ---------------------------------------------------------------------------
+// Pantalla
+// ---------------------------------------------------------------------------
 
 export function ReciboDeCanje() {
-  const { userData, navigate } = useApp()
+  const { userData, navigate, seleccionarProducto } = useApp()
   const { canje, cargando, error } = useUltimoCanje(userData?.Nombre)
+  const { productos } = useProductos()
+  const [transicionTerminada, setTransicionTerminada] = useState(false)
+  const { escala, opacidad } = useTransicionVerde(() => setTransicionTerminada(true))
   const puntosActuales = Number(userData?.Puntos) || 0
+
+  const producto = canje
+    ? productos.find((p) => p.id === canje.productoId) ?? productos.find((p) => p.nombre === canje.producto)
+    : undefined
+
+  // El canje terminó: se olvida el producto para que Canjes arranque sin nada elegido
+  const volverAlInicio = () => {
+    seleccionarProducto(null)
+    navigate('home')
+  }
+
+  const listo = transicionTerminada && !cargando
 
   return (
     <View style={estilos.pantalla}>
-      <ScrollView contentContainerStyle={estilos.contenido}>
-        <Contenido
-          canje={canje}
-          puntosActuales={puntosActuales}
-          cargando={cargando}
-          error={error}
-        />
-        <BotonPrimario label="Volver al inicio" onPress={() => navigate('home')} />
+      <StatusBar barStyle="dark-content" />
+
+      <ScrollView contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false}>
+        {transicionTerminada && cargando && (
+          <ActivityIndicator size="large" color={COLORES.verde} style={estilos.cargando} />
+        )}
+
+        {listo && error !== '' && <MensajeError message={error} />}
+
+        {listo && !error && !canje && (
+          <EntradaSuave>
+            <View style={estilos.sinCanjes}>
+              <TituloDePantalla texto="Todavía no tenés canjes" />
+              <Text style={estilos.descripcion}>Cuando canjees un producto, tu recibo va a aparecer acá.</Text>
+            </View>
+          </EntradaSuave>
+        )}
+
+        {listo && !error && canje && (
+          <View style={estilos.cuerpo}>
+            <EntradaSuave>
+              <Encabezado />
+            </EntradaSuave>
+            <EntradaSuave demora={120}>
+              <TarjetaProducto canje={canje} producto={producto} />
+            </EntradaSuave>
+            <EntradaSuave demora={220}>
+              <ResumenTransaccion canje={canje} puntosActuales={puntosActuales} />
+            </EntradaSuave>
+          </View>
+        )}
+
+        {listo && (
+          <EntradaSuave demora={320}>
+            <BotonPrimario label="Volver al inicio" onPress={volverAlInicio} />
+          </EntradaSuave>
+        )}
       </ScrollView>
+
+      {/* La capa verde va encima de todo y desaparece al terminar la transición */}
+      {!transicionTerminada && <CapaVerde escala={escala} opacidad={opacidad} />}
     </View>
   )
 }
@@ -151,112 +186,159 @@ const estilos = StyleSheet.create({
   contenido: {
     flexGrow: 1,
     justifyContent: 'space-between',
-    gap: 32,
+    gap: 28,
     paddingHorizontal: 24,
+    paddingTop: 36,
     paddingBottom: 32,
-    paddingTop: 56,
   },
   cargando: {
-    marginTop: 48,
+    marginTop: 120,
+  },
+  cuerpo: {
+    gap: 16,
   },
 
-  // --- Encabezado de éxito
-  encabezadoExito: {
+  // --- Encabezado (mismo estilo que la verificación de código)
+  encabezado: {
     alignItems: 'center',
+    gap: 14,
+    marginBottom: 8,
   },
-  iconoExito: {
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9999,
-    backgroundColor: COLORES.verde600,
-  },
-  tituloExito: {
-    marginTop: 20,
-    fontSize: 24,
-    lineHeight: 32,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-    color: COLORES.gris900,
-  },
-  subtituloExito: {
-    marginTop: 4,
+  descripcion: {
     textAlign: 'center',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 22.75,
     color: COLORES.gris500,
   },
 
-  // --- Comprobante
-  comprobante: {
-    marginTop: 32,
-    borderRadius: 24,
+  // --- Tarjetas
+  tarjeta: {
+    gap: 14,
+    borderRadius: RADIOS.tarjeta,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: COLORES.verde300,
+    borderColor: COLORES.linea,
     backgroundColor: COLORES.blanco,
-    padding: 24,
+    padding: 18,
+    ...SOMBRAS.chica,
   },
-  comprobanteFilas: {
-    gap: 16,
+  etiquetaBloque: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: COLORES.verde700,
   },
+
+  // --- Producto
+  productoFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  productoImagen: {
+    width: 60,
+    height: 60,
+    overflow: 'hidden',
+    borderRadius: RADIOS.medio,
+    borderWidth: 1,
+    borderColor: COLORES.verde200,
+    backgroundColor: COLORES.verde100,
+  },
+  productoImagenInterna: {
+    width: 60,
+    height: 60,
+  },
+  productoTextos: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  productoNombre: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    color: COLORES.gris900,
+  },
+  chipCategoria: {
+    borderRadius: RADIOS.pildora,
+    backgroundColor: COLORES.verde100,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  chipCategoriaTexto: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
+    color: COLORES.verde700,
+  },
+
+  // --- Filas de la operación
   fila: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
+    paddingVertical: 12,
+  },
+  filaConDivisor: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORES.linea,
+  },
+  filaIzquierda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  filaIcono: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIOS.chico - 2,
+    backgroundColor: COLORES.verde100,
   },
   filaEtiqueta: {
     fontSize: 14,
     lineHeight: 20,
     color: COLORES.gris500,
   },
-  filaValor: {
-    flex: 1,
+  valor: {
+    flexShrink: 1,
     textAlign: 'right',
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORES.gris900,
   },
-  filaCodigo: {
+  valorDestacado: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '800',
+    color: COLORES.verde700,
+  },
+  codigoPastilla: {
+    flexShrink: 1,
+    borderRadius: RADIOS.chico,
+    borderWidth: 1,
+    borderColor: COLORES.linea,
+    backgroundColor: COLORES.fondo,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  codigoTexto: {
     fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
-    letterSpacing: 1.5,
-  },
-  insignia: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 24,
-    borderRadius: 12,
-    backgroundColor: COLORES.verde100,
-    paddingVertical: 10,
-  },
-  insigniaTexto: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
-    color: COLORES.verde600,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: COLORES.gris900,
   },
 
   // --- Sin canjes
   sinCanjes: {
-    alignItems: 'center',
-    gap: 4,
-    paddingTop: 48,
-  },
-  sinCanjesTitulo: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: COLORES.gris900,
-  },
-  sinCanjesTexto: {
-    textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORES.gris500,
+    gap: 8,
+    paddingTop: 80,
   },
 })

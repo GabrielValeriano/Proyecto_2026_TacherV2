@@ -1,6 +1,7 @@
 // Copia de TacherV2/src/components/CampoInput.tsx: si cambiás uno, cambiá el otro para que las dos apps se vean iguales.
-import React, { type ReactNode } from 'react'
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native'
+import React, { useState, type ReactNode } from 'react'
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, type TextInputProps } from 'react-native'
+import { Eye, EyeOff } from 'lucide-react-native'
 import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 interface Props extends TextInputProps {
@@ -9,7 +10,15 @@ interface Props extends TextInputProps {
   error?: boolean
 }
 
-export function CampoInput({ label, icon, error = false, ...inputProps }: Props) {
+/**
+ * Campo de texto de la app. Si es de contraseña (`secureTextEntry`), muestra a la derecha un
+ * botón con un ojo para ver u ocultar lo que se escribe.
+ */
+export function CampoInput({ label, icon, error = false, secureTextEntry, ...inputProps }: Props) {
+  const esContrasena = Boolean(secureTextEntry)
+  const [visible, setVisible] = useState(false)
+  const IconoOjo = visible ? EyeOff : Eye
+
   return (
     <View style={estilos.contenedor}>
       {label && <Text style={estilos.etiqueta}>{label}</Text>}
@@ -17,9 +26,24 @@ export function CampoInput({ label, icon, error = false, ...inputProps }: Props)
         {icon}
         <TextInput
           placeholderTextColor={COLORES.gris}
+          autoCapitalize={esContrasena ? 'none' : undefined}
+          autoCorrect={esContrasena ? false : undefined}
           {...inputProps}
+          secureTextEntry={esContrasena && !visible}
           style={[estilos.input, inputProps.style]}
         />
+        {esContrasena && (
+          <TouchableOpacity
+            activeOpacity={0.6}
+            onPress={() => setVisible((v) => !v)}
+            hitSlop={10}
+            style={estilos.botonOjo}
+            accessibilityRole="button"
+            accessibilityLabel={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            <IconoOjo size={20} color={COLORES.textoSuave} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   )
@@ -50,6 +74,10 @@ const estilos = StyleSheet.create({
   },
   cajaConError: {
     borderColor: COLORES.rojo500,
+  },
+  botonOjo: {
+    marginLeft: 4,
+    padding: 2,
   },
   input: {
     flex: 1,

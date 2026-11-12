@@ -9,6 +9,11 @@ export interface CuentaGoogle {
   nombre: string
 }
 
+/** Cierra la sesión de Google en el teléfono (para que la próxima vez se pueda elegir otra cuenta). */
+export async function cerrarSesionGoogle(): Promise<void> {
+  await GoogleSignin.signOut().catch(() => {})
+}
+
 export function configurarGoogleSignIn() {
   GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, offlineAccess: false })
 }

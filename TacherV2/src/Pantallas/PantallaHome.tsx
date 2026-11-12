@@ -104,7 +104,7 @@ function AccesoInstrucciones({ onPress }: { onPress: () => void }) {
 }
 
 export function PantallaHome() {
-  const { userData, navigate, cerrarSesion } = useApp()
+  const { userData, navigate } = useApp()
   const handleTabPress = useNavegacionPestañas()
 
   const puntos = Number(userData?.Puntos) || 0
@@ -219,11 +219,13 @@ const estilos = StyleSheet.create({
     lineHeight: 20,
     color: COLORES.sobreOscuro,
   },
+  // Pastilla con el ícono y el texto en fila
   botonCanjear: {
     width: 'auto',
-    paddingHorizontal: 16,
-    height: 50,
-    borderRadius: 16,
+    height: 48,
+    gap: 8,
+    borderRadius: RADIOS.pildora,
+    paddingHorizontal: 20,
   },
   barraProgresoContenedor: {
     gap: 8,
@@ -296,11 +298,13 @@ const estilos = StyleSheet.create({
     fontWeight: '600',
     color: COLORES.principalOscuro,
   },
+  // Pastilla con el ícono y el texto en fila
   botonReciclajesChico: {
     width: 'auto',
-    paddingHorizontal: 14,
-    height: 42,
-    borderRadius: 14,
+    height: 44,
+    gap: 8,
+    borderRadius: RADIOS.pildora,
+    paddingHorizontal: 16,
   },
 
   // Sección Tu camino

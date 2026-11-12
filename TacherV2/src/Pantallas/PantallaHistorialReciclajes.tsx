@@ -1,39 +1,17 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { Recycle } from 'lucide-react-native'
+import { CabeceraHistorial } from 'src/components/CabeceraHistorial'
 import { EsqueletoReciclajes } from 'src/components/EsqueletoReciclajes'
 import { ItemHistorialReciclaje } from 'src/components/ItemHistorialReciclaje'
 import { MensajeError } from 'src/components/MensajeError'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
 import { useReciclajesPaginado } from 'src/hooks/useReciclajesPaginado'
-import { COLORES, SOMBRAS } from 'src/theme'
+import { useTotalesHistorial } from 'src/hooks/useTotalesHistorial'
+import { obtenerTotalesReciclajes } from 'src/services/reciclajes'
+import { COLORES, RADIOS } from 'src/theme'
 import type { Reciclaje } from 'src/services/reciclajes'
-
-function TarjetaResumen({
-  totalReciclajes,
-  totalPuntos,
-}: {
-  totalReciclajes: number
-  totalPuntos: number
-}) {
-  return (
-    <View style={estilos.tarjetaResumen}>
-      <Text style={estilos.tarjetaTitulo}>Resumen</Text>
-      <View style={estilos.resumenFila}>
-        <View style={estilos.resumenItem}>
-          <Text style={estilos.resumenEtiqueta}>Total reciclajes</Text>
-          <Text style={estilos.resumenValor}>{totalReciclajes.toLocaleString('es-AR')}</Text>
-        </View>
-        <View style={estilos.resumenSeparador} />
-        <View style={estilos.resumenItem}>
-          <Text style={estilos.resumenEtiqueta}>Puntos ganados</Text>
-          <Text style={estilos.resumenValorVerde}>+{totalPuntos.toLocaleString('es-AR')}</Text>
-        </View>
-      </View>
-    </View>
-  )
-}
 
 function EstadoVacio() {
   return (
@@ -64,24 +42,24 @@ export function PantallaHistorialReciclajes() {
   const { items, cargandoInicial, cargandoMas, error, hayMas, refrescando, cargarMas, refrescar } =
     useReciclajesPaginado(userData?.id, 10)
 
-  const { totalReciclajes, totalPuntos } = useMemo(() => {
-    const totalReciclajes = items.length
-    const totalPuntos = items.reduce((acc, item) => acc + (Number(item.puntos) || 0), 0)
-    return { totalReciclajes, totalPuntos }
-  }, [items])
+  // Totales de todo el historial (la lista se carga de a 10: sumarla daría un número incompleto)
+  const totales = useTotalesHistorial(obtenerTotalesReciclajes, userData?.id, refrescando)
+  const totalReciclajes = totales?.cantidad ?? Math.max(0, Number(userData?.reciclajes) || 0)
 
-  const renderItem = ({ item, index }: { item: Reciclaje; index: number }) => (
-    <ItemHistorialReciclaje reciclaje={item} conDivisor={index < items.length - 1} />
-  )
+  const renderItem = ({ item }: { item: Reciclaje }) => <ItemHistorialReciclaje reciclaje={item} />
 
   const renderHeader = () => (
-    <View style={estilos.headerContenido}>
-      <View style={estilos.titulos}>
-        <Text style={estilos.tituloPantalla}>Historial</Text>
-        <Text style={estilos.subtituloPantalla}>Tus reciclajes</Text>
-      </View>
-      <TarjetaResumen totalReciclajes={totalReciclajes} totalPuntos={totalPuntos} />
-    </View>
+    <CabeceraHistorial
+      icono={Recycle}
+      etiqueta="Historial"
+      titulo="Tus reciclajes"
+      descripcion="Cada residuo que dejás en la caja TacherV2 suma puntos para canjear."
+      metricas={[
+        { etiqueta: totalReciclajes === 1 ? 'Reciclaje' : 'Reciclajes', valor: totalReciclajes.toLocaleString('es-AR') },
+        { etiqueta: 'Puntos ganados', valor: totales ? `+${totales.puntos.toLocaleString('es-AR')}` : '—' },
+      ]}
+      tituloLista="Actividad reciente"
+    />
   )
 
   const renderEmpty = () => {
@@ -131,72 +109,6 @@ const estilos = StyleSheet.create({
     paddingBottom: 24,
     flexGrow: 1,
   },
-  headerContenido: {
-    gap: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  titulos: {
-    gap: 4,
-  },
-  tituloPantalla: {
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.8,
-    color: COLORES.texto,
-  },
-  subtituloPantalla: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORES.textoSuave,
-  },
-  tarjetaResumen: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORES.linea,
-    backgroundColor: COLORES.blanco,
-    padding: 18,
-    gap: 14,
-    ...SOMBRAS.chica,
-  },
-  tarjetaTitulo: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: COLORES.texto,
-  },
-  resumenFila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  resumenItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  resumenSeparador: {
-    width: 1,
-    height: 48,
-    backgroundColor: COLORES.linea,
-  },
-  resumenEtiqueta: {
-    fontSize: 14,
-    lineHeight: 18,
-    color: COLORES.textoSuave,
-  },
-  resumenValor: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: COLORES.texto,
-  },
-  resumenValorVerde: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: COLORES.principal,
-  },
   vacioContenedor: {
     alignItems: 'center',
     gap: 12,
@@ -207,7 +119,7 @@ const estilos = StyleSheet.create({
     height: 88,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 28,
+    borderRadius: RADIOS.grande,
     backgroundColor: COLORES.suave,
   },
   vacioTitulo: {

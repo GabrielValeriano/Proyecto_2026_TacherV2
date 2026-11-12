@@ -1,10 +1,13 @@
 import {
   collection,
+  count,
+  getAggregateFromServer,
   getDocs,
   limit,
   orderBy,
   query,
   startAfter,
+  sum,
   where,
   type DocumentData,
   type QueryDocumentSnapshot,
@@ -107,6 +110,26 @@ export async function obtenerUltimosReciclajes(
   const nextCursor = hayMas && docsAMostrar.length > 0 ? docsAMostrar[docsAMostrar.length - 1] : null
 
   return { items, nextCursor, hayMas }
+}
+
+/** Totales de un historial: cuántos registros y cuántos puntos suman. */
+export interface TotalesHistorial {
+  cantidad: number
+  puntos: number
+}
+
+/**
+ * Cantidad de reciclajes y puntos ganados en total. Lo calcula Firestore en el servidor
+ * (count y sum), así no hace falta descargar todo el historial.
+ */
+export async function obtenerTotalesReciclajes(uid: string): Promise<TotalesHistorial> {
+  const consulta = query(collection(db, COLECCION_RECICLAJES), where(CAMPOS.uid, '==', uid))
+  const resultado = await getAggregateFromServer(consulta, {
+    cantidad: count(),
+    puntos: sum(CAMPOS.puntos),
+  })
+  const { cantidad, puntos } = resultado.data()
+  return { cantidad: Number(cantidad) || 0, puntos: Number(puntos) || 0 }
 }
 
 export async function obtenerUltimosReciclajesSimple(uid: string, cantidad = 10): Promise<Reciclaje[]> {

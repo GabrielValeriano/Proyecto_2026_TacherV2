@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -50,14 +49,18 @@ const RADIO_BOTON = RADIOS.tarjeta
 
 /** La acción principal del cajero: un cuadrado grande y centrado con el degradé de la marca. */
 function BotonEscanear({ onPress, cargando }: { onPress: () => void; cargando: boolean }) {
+  const [presionado, setPresionado] = useState(false)
   return (
-    <Pressable
+    <TouchableOpacity
+      activeOpacity={0.9}
       onPress={onPress}
+      onPressIn={() => setPresionado(true)}
+      onPressOut={() => setPresionado(false)}
       disabled={cargando}
       accessibilityRole="button"
       accessibilityLabel="Escanear QR del cliente"
       accessibilityState={{ busy: cargando }}
-      style={({ pressed }) => [estilos.botonEscanear, pressed && estilos.botonEscanearPresionado]}
+      style={[estilos.botonEscanear, presionado && estilos.botonEscanearPresionado]}
     >
       <View style={estilos.botonEscanearAnillo}>
         <CirculoMarca size={TAMANIO_BOTON} radio={RADIO_BOTON}>
@@ -70,7 +73,7 @@ function BotonEscanear({ onPress, cargando }: { onPress: () => void; cargando: b
       </View>
       <Text style={estilos.botonEscanearTexto}>Escanear QR</Text>
       <Text style={estilos.botonEscanearAyuda}>Tocá para abrir la cámara</Text>
-    </Pressable>
+    </TouchableOpacity>
   )
 }
 

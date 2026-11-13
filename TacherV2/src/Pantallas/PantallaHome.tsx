@@ -5,9 +5,9 @@ import { BarraDeNavegacion } from 'src/components/BarraDeNavegacion'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { Encabezado } from 'src/components/Encabezado'
 import { useApp } from 'src/context/AppContext'
-import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
+import { getResumenNivelPorReciclajes } from 'src/domain/niveles'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
-import { useSincronizarRango } from 'src/hooks/useSincronizarRango'
+import { useSincronizarNivel } from 'src/hooks/useSincronizarNivel'
 import { COLORES, SOMBRAS, RADIOS } from 'src/theme'
 
 function Saludo({ nombre }: { nombre: string }) {
@@ -50,11 +50,11 @@ function TarjetaReciclajes({
   reciclajes: number
   onVerReciclajes: () => void
 }) {
-  const { proximo, progreso } = getResumenRangoPorReciclajes(reciclajes)
+  const { proximo, progreso } = getResumenNivelPorReciclajes(reciclajes)
 
   const mensajeProgreso = proximo
-    ? `Llevas ${reciclajes.toLocaleString('es-AR')} de ${proximo.min.toLocaleString('es-AR')} reciclajes para Rango ${proximo.name}`
-    : '¡Alcanzaste el rango máximo!'
+    ? `Llevas ${reciclajes.toLocaleString('es-AR')} de ${proximo.min.toLocaleString('es-AR')} reciclajes para Nivel ${proximo.name}`
+    : '¡Alcanzaste el nivel máximo!'
 
   return (
     <View style={estilos.tarjetaReciclajes}>
@@ -110,10 +110,10 @@ export function PantallaHome() {
   const puntos = Number(userData?.Puntos) || 0
   const reciclajesBruto = (userData as any)?.reciclajes ?? (userData as any)?.Reciclajes
   const reciclajes = reciclajesBruto === undefined || reciclajesBruto === null ? 0 : Math.max(0, Number(reciclajesBruto) || 0)
-  const resumenRango = getResumenRangoPorReciclajes(reciclajes)
-  const rangoActual = userData?.Rango || resumenRango.actual.name
+  const resumenNivel = getResumenNivelPorReciclajes(reciclajes)
+  const nivelActual = userData?.Rango || resumenNivel.actual.name
 
-  useSincronizarRango(userData, resumenRango.actual.name)
+  useSincronizarNivel(userData, resumenNivel.actual.name)
 
   return (
     <View style={estilos.pantalla}>
@@ -283,7 +283,7 @@ const estilos = StyleSheet.create({
     fontWeight: '800',
     color: COLORES.texto,
   },
-  rangoYCajon: {
+  nivelYCajon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -292,7 +292,7 @@ const estilos = StyleSheet.create({
     borderRadius: 9999,
     backgroundColor: COLORES.suave,
   },
-  nombreRangoChico: {
+  nombreNivelChico: {
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '600',

@@ -20,7 +20,7 @@ import { useRanking } from 'src/hooks/useRanking'
 import type { PuestoRanking } from 'src/services/ranking'
 import { COLORES, SOMBRAS } from 'src/theme'
 import { EsqueletoPodio } from 'src/components/EsqueletoPodio'
-import { CaminoDeRangos } from 'src/components/CaminoDeRangos'
+import { CaminoDeNiveles } from 'src/components/CaminoDeNiveles'
 import { SelectorBeneficios } from 'src/components/SelectorBeneficios'
 
 
@@ -276,7 +276,7 @@ export function PantallaRanking() {
 
        
         <View style={estilos.seccionCamino}>
-          <CaminoDeRangos reciclajes={reciclajes} />
+          <CaminoDeNiveles reciclajes={reciclajes} />
         </View>
 
        {/* Sección inferior: Selector de Beneficios */}

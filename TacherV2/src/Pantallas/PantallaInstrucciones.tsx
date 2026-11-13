@@ -1,20 +1,6 @@
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import {
-  BookOpen,
-  Coins,
-  DoorClosed,
-  Gift,
-  IdCard,
-  Lightbulb,
-  MonitorCheck,
-  PackagePlus,
-  QrCode,
-  Recycle,
-  ScanLine,
-  ShoppingBag,
-  type LucideIcon,
-} from 'lucide-react-native'
+import { Gift, Lightbulb, Recycle, type LucideIcon } from 'lucide-react-native'
 import { BotonPrimario } from 'src/components/BotonPrimario'
 import { ScreenHeader } from 'src/components/ScreenHeader'
 import { useApp } from 'src/context/AppContext'
@@ -22,7 +8,6 @@ import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 import type { Pantalla } from 'src/types'
 
 interface PasoGuia {
-  icono: LucideIcon
   titulo: string
   detalle: string
 }
@@ -47,22 +32,18 @@ const GUIAS: Guia[] = [
     descripcion: 'Cuatro pasos y tus puntos aparecen solos en la app.',
     pasos: [
       {
-        icono: IdCard,
         titulo: 'Escaneá tu DNI',
         detalle: 'Acercá el código de barras de tu documento al lector de la caja para que sepa quién sos.',
       },
       {
-        icono: PackagePlus,
         titulo: 'Depositá el residuo',
         detalle: 'Colocá el residuo en la recámara de la caja, con el código de barras a la vista.',
       },
       {
-        icono: DoorClosed,
         titulo: 'Cerrá la puerta',
         detalle: 'Cerrá bien la puerta de la caja para que pueda procesar el residuo.',
       },
       {
-        icono: MonitorCheck,
         titulo: 'Listo: sumás puntos',
         detalle:
           'La pantalla te muestra el valor del residuo, la caja lo pasa al tacho reciclador de abajo y los puntos se suman automáticamente a tu cuenta.',
@@ -79,22 +60,18 @@ const GUIAS: Guia[] = [
     descripcion: 'Cambiá tus puntos por productos del kiosco de la escuela.',
     pasos: [
       {
-        icono: Coins,
         titulo: 'Revisá tus puntos',
         detalle: 'Fijate que tengas los puntos necesarios para el producto que querés.',
       },
       {
-        icono: ShoppingBag,
         titulo: 'Elegí el producto',
         detalle: 'Entrá a Canjes y seleccioná del catálogo el producto que querés canjear.',
       },
       {
-        icono: QrCode,
         titulo: 'Generá el QR de canje',
         detalle: 'La app crea un código QR único para ese canje.',
       },
       {
-        icono: ScanLine,
         titulo: 'Mostralo en la caja',
         detalle:
           'El cajero TacherV2 escanea tu QR, te descuenta los puntos y te entrega el producto.',
@@ -121,9 +98,6 @@ export function PantallaInstrucciones() {
         <View style={estilos.hero}>
           <View style={estilos.circuloDecorativoGrande} />
           <View style={estilos.circuloDecorativoChico} />
-          <View style={estilos.heroIcono}>
-            <BookOpen size={28} color={COLORES.oscuro} />
-          </View>
           <Text style={estilos.heroTitulo} accessibilityRole="header">
             Cómo usar TacherV2
           </Text>
@@ -145,7 +119,7 @@ export function PantallaInstrucciones() {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: activa }}
               >
-                <Icono size={18} color={activa ? COLORES.blanco : COLORES.principalOscuro} />
+                <Icono size={18} color={activa ? COLORES.principal : COLORES.textoSuave} />
                 <Text style={[estilos.opcionTexto, activa && estilos.opcionTextoActiva]}>{pestaña}</Text>
               </TouchableOpacity>
             )
@@ -166,19 +140,14 @@ export function PantallaInstrucciones() {
             </View>
           </View>
 
-          <View>
+          <View style={estilos.pasos}>
             {guia.pasos.map((paso, indice) => (
-              <Paso
-                key={paso.titulo}
-                numero={indice + 1}
-                paso={paso}
-                esUltimo={indice === guia.pasos.length - 1}
-              />
+              <Paso key={paso.titulo} numero={indice + 1} paso={paso} />
             ))}
           </View>
 
           <View style={estilos.consejo}>
-            <Lightbulb size={20} color={COLORES.avisoOscuro} />
+            <Lightbulb size={20} color={COLORES.verde700} />
             <Text style={estilos.consejoTexto}>{guia.consejo}</Text>
           </View>
         </View>
@@ -189,24 +158,14 @@ export function PantallaInstrucciones() {
   )
 }
 
-function Paso({ numero, paso, esUltimo }: { numero: number; paso: PasoGuia; esUltimo: boolean }) {
-  const Icono = paso.icono
+function Paso({ numero, paso }: { numero: number; paso: PasoGuia }) {
   return (
     <View style={estilos.paso} accessible accessibilityLabel={`Paso ${numero}: ${paso.titulo}. ${paso.detalle}`}>
-      <View style={estilos.pasoColumna}>
-        <View style={estilos.pasoNumero}>
-          <Text style={estilos.pasoNumeroTexto}>{numero}</Text>
-        </View>
-        {!esUltimo && <View style={estilos.pasoLinea} />}
+      <View style={estilos.pasoNumero}>
+        <Text style={estilos.pasoNumeroTexto}>{numero}</Text>
       </View>
-
-      <View style={[estilos.pasoTarjeta, !esUltimo && estilos.pasoTarjetaConEspacio]}>
-        <View style={estilos.pasoTarjetaFila}>
-          <View style={estilos.pasoIcono}>
-            <Icono size={20} color={COLORES.principal} />
-          </View>
-          <Text style={estilos.pasoTitulo}>{paso.titulo}</Text>
-        </View>
+      <View style={estilos.pasoTextos}>
+        <Text style={estilos.pasoTitulo}>{paso.titulo}</Text>
         <Text style={estilos.pasoDetalle}>{paso.detalle}</Text>
       </View>
     </View>
@@ -254,15 +213,6 @@ const estilos = StyleSheet.create({
     borderRadius: 55,
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  heroIcono: {
-    width: 52,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-    borderRadius: RADIOS.medio,
-    backgroundColor: COLORES.acento,
-  },
   heroTitulo: {
     fontSize: 26,
     lineHeight: 32,
@@ -280,12 +230,11 @@ const estilos = StyleSheet.create({
   selector: {
     flexDirection: 'row',
     gap: 6,
-    borderRadius: RADIOS.tarjeta,
+    borderRadius: RADIOS.boton,
     borderWidth: 1,
     borderColor: COLORES.linea,
-    backgroundColor: COLORES.blanco,
-    padding: 6,
-    ...SOMBRAS.chica,
+    backgroundColor: COLORES.suave,
+    padding: 5,
   },
   opcion: {
     flex: 1,
@@ -293,21 +242,24 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: RADIOS.boton,
-    paddingVertical: 12,
+    borderRadius: RADIOS.medio - 2,
+    paddingVertical: 11,
   },
   opcionActiva: {
-    backgroundColor: COLORES.principal,
-    ...SOMBRAS.media,
+    borderWidth: 1,
+    borderColor: COLORES.verde200,
+    backgroundColor: COLORES.blanco,
+    ...SOMBRAS.chica,
   },
   opcionTexto: {
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '700',
-    color: COLORES.principalOscuro,
+    fontWeight: '600',
+    color: COLORES.textoSuave,
   },
   opcionTextoActiva: {
-    color: COLORES.blanco,
+    fontWeight: '800',
+    color: COLORES.principalOscuro,
   },
 
   // --- Guía
@@ -350,14 +302,20 @@ const estilos = StyleSheet.create({
     color: COLORES.textoSuave,
   },
 
-  // --- Pasos
+  // --- Pasos: cada uno en su tarjeta, con el número centrado respecto del texto
+  pasos: {
+    gap: 10,
+  },
   paso: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  pasoColumna: {
-    width: TAMANIO_NUMERO,
     alignItems: 'center',
+    gap: 14,
+    borderRadius: RADIOS.medio,
+    borderWidth: 1,
+    borderColor: COLORES.linea,
+    backgroundColor: COLORES.fondo,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   pasoNumero: {
     width: TAMANIO_NUMERO,
@@ -365,48 +323,21 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: TAMANIO_NUMERO / 2,
-    backgroundColor: COLORES.oscuro,
+    borderWidth: 1,
+    borderColor: COLORES.verde200,
+    backgroundColor: COLORES.suave,
   },
   pasoNumeroTexto: {
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '800',
-    color: COLORES.acento,
+    color: COLORES.verde700,
   },
-  pasoLinea: {
+  pasoTextos: {
     flex: 1,
-    width: 2,
-    marginVertical: 4,
-    borderRadius: 1,
-    backgroundColor: COLORES.verde200,
-  },
-  pasoTarjeta: {
-    flex: 1,
-    gap: 6,
-    borderRadius: RADIOS.medio,
-    backgroundColor: COLORES.fondo,
-    borderWidth: 1,
-    borderColor: COLORES.linea,
-    padding: 12,
-  },
-  pasoTarjetaConEspacio: {
-    marginBottom: 12,
-  },
-  pasoTarjetaFila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  pasoIcono: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIOS.chico,
-    backgroundColor: COLORES.suave,
+    gap: 3,
   },
   pasoTitulo: {
-    flex: 1,
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '700',
@@ -414,7 +345,7 @@ const estilos = StyleSheet.create({
   },
   pasoDetalle: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
     color: COLORES.gris600,
   },
 
@@ -425,8 +356,8 @@ const estilos = StyleSheet.create({
     gap: 10,
     borderRadius: RADIOS.medio,
     borderWidth: 1,
-    borderColor: COLORES.aviso200,
-    backgroundColor: COLORES.aviso50,
+    borderColor: COLORES.verde200,
+    backgroundColor: COLORES.suave,
     padding: 12,
   },
   consejoTexto: {
@@ -434,6 +365,6 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
-    color: COLORES.avisoOscuro,
+    color: COLORES.verde700,
   },
 })

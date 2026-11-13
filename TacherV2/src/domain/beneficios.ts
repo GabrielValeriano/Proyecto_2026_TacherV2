@@ -1,4 +1,4 @@
-import { RANGOS } from 'src/domain/rangos'
+import { NIVELES } from 'src/domain/niveles'
 
 export interface Beneficio {
   id: string
@@ -10,10 +10,10 @@ export interface Beneficio {
   reciclajes: number
 }
 
-function reciclajesDelRango(nombre: string): number {
-  const rango = RANGOS.find((opcion) => opcion.name === nombre)
-  if (!rango) throw new Error(`No existe el rango "${nombre}" para el beneficio`)
-  return rango.min
+function reciclajesDelNivel(nombre: string): number {
+  const nivel = NIVELES.find((opcion) => opcion.name === nombre)
+  if (!nivel) throw new Error(`No existe el nivel "${nombre}" para el beneficio`)
+  return nivel.min
 }
 
 export const BENEFICIOS: Beneficio[] = [
@@ -24,7 +24,7 @@ export const BENEFICIOS: Beneficio[] = [
     detalle: 'En un producto',
     descuento: 25,
     productos: ['Alfajor Jorgito'],
-    reciclajes: reciclajesDelRango('Brote'),
+    reciclajes: reciclajesDelNivel('Brote'),
   },
   {
     id: 'Planta',
@@ -33,7 +33,7 @@ export const BENEFICIOS: Beneficio[] = [
     detalle: 'En un producto',
     descuento: 50,
     productos: ['Sándwich de jamon y queso'],
-    reciclajes: reciclajesDelRango('Planta'),
+    reciclajes: reciclajesDelNivel('Planta'),
   },
   {
     id: 'Arbol',
@@ -42,7 +42,7 @@ export const BENEFICIOS: Beneficio[] = [
     detalle: '50% en cada uno',
     descuento: 50,
     productos: ['Coca Cola 600ml', 'Beldent'],
-    reciclajes: reciclajesDelRango('Arbol'),
+    reciclajes: reciclajesDelNivel('Arbol'),
   },
   {
     id: 'Bosque',
@@ -51,7 +51,7 @@ export const BENEFICIOS: Beneficio[] = [
     detalle: 'Sin costo',
     descuento: 100,
     productos: ['Cepita 1L', 'Pep 700g', 'Turrón'],
-    reciclajes: reciclajesDelRango('Bosque'),
+    reciclajes: reciclajesDelNivel('Bosque'),
   },
 ]
 

@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import {
   CalendarDays,
   Cpu,
-  GraduationCap,
   HeartHandshake,
   Leaf,
   Lightbulb,
@@ -22,7 +21,11 @@ import type { Pantalla } from 'src/types'
 const PESTAÑAS: Pantalla[] = ['home', 'ranking', 'canjes', 'perfil']
 
 const PILARES: { icono: LucideIcon; titulo: string; texto: string }[] = [
-  { icono: Lightbulb, titulo: 'Innovación', texto: 'Una idea propia, pensada y construida por estudiantes.' },
+  {
+    icono: Lightbulb,
+    titulo: 'Innovación',
+    texto: 'Idea de la Escuela Técnica de la UBA, desarrollada por sus estudiantes: la app y la caja.',
+  },
   { icono: Cpu, titulo: 'Tecnología', texto: 'Electrónica, software y nube trabajando juntos.' },
   { icono: Leaf, titulo: 'Sustentabilidad', texto: 'Menos residuos y más conciencia ambiental.' },
 ]
@@ -62,7 +65,7 @@ export function PantallaInformacion() {
           <View accessibilityRole="header">
             <MarcaTacherV2 tamanio={34} />
           </View>
-          <Text style={estilos.lema}>Tecnología al servicio del reciclaje escolar</Text>
+          <Text style={estilos.lema}>Reciclar ahora tiene una recompensa</Text>
         </View>
 
         {/* Pilares */}
@@ -98,16 +101,6 @@ export function PantallaInformacion() {
           ]}
         />
 
-        <Bloque
-          icono={GraduationCap}
-          etiqueta="Escuela técnica y UBA"
-          titulo="Hecho en nuestra comunidad educativa"
-          parrafos={[
-            'TacherV2 es un aporte de estudiantes de una escuela técnica vinculada a la Universidad de Buenos Aires. Refleja los valores que compartimos con la universidad: la formación técnica de calidad, el pensamiento crítico y el compromiso con la sociedad.',
-            'Nuestra intención es que el proyecto quede como una herramienta útil para la escuela y como un punto de partida para que otras camadas lo sigan haciendo crecer.',
-          ]}
-          destacado
-        />
 
         {/* Cómo funciona por dentro */}
         <View style={estilos.bloque}>

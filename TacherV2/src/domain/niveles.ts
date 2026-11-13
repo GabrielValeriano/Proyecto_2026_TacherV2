@@ -1,39 +1,39 @@
 import { Leaf, Sprout, Flower2, TreeDeciduous, type LucideIcon, Trees } from 'lucide-react-native'
 
-export interface Rango {
+export interface Nivel {
   name: string
   min: number
   icon: LucideIcon
 }
 
-export const RANGOS: Rango[] = [
+export const NIVELES: Nivel[] = [
   { name: 'Brote', min: 0, icon: Sprout },
   { name: 'Planta', min: 25, icon: Flower2 },
   { name: 'Arbol', min: 50, icon: TreeDeciduous },
   { name: 'Bosque', min: 100, icon: Trees },
 ]
 
-export function getRangoParaReciclajes(reciclajes = 0): Rango {
+export function getNivelParaReciclajes(reciclajes = 0): Nivel {
   const valor = Math.max(0, Number(reciclajes) || 0)
-  return [...RANGOS].reverse().find((rango) => valor >= rango.min) ?? RANGOS[0]
+  return [...NIVELES].reverse().find((nivel) => valor >= nivel.min) ?? NIVELES[0]
 }
 
-export function getProximoRangoPorReciclajes(reciclajes = 0): Rango | null {
+export function getProximoNivelPorReciclajes(reciclajes = 0): Nivel | null {
   const valor = Math.max(0, Number(reciclajes) || 0)
-  return RANGOS.find((rango) => valor < rango.min) ?? null
+  return NIVELES.find((nivel) => valor < nivel.min) ?? null
 }
 
-export interface ResumenRangoPorReciclajes {
-  actual: Rango
-  proximo: Rango | null
+export interface ResumenNivelPorReciclajes {
+  actual: Nivel
+  proximo: Nivel | null
   progreso: number
   reciclajesFaltantes: number
 }
 
-export function getResumenRangoPorReciclajes(reciclajes = 0): ResumenRangoPorReciclajes {
+export function getResumenNivelPorReciclajes(reciclajes = 0): ResumenNivelPorReciclajes {
   const valor = Math.max(0, Number(reciclajes) || 0)
-  const actual = getRangoParaReciclajes(valor)
-  const proximo = getProximoRangoPorReciclajes(valor)
+  const actual = getNivelParaReciclajes(valor)
+  const proximo = getProximoNivelPorReciclajes(valor)
 
   if (!proximo) {
     return { actual, proximo: null, progreso: 100, reciclajesFaltantes: 0 }
@@ -45,23 +45,23 @@ export function getResumenRangoPorReciclajes(reciclajes = 0): ResumenRangoPorRec
   return { actual, proximo, progreso, reciclajesFaltantes }
 }
 
-export function getRangoParaPuntos(puntos = 0): Rango {
-  return getRangoParaReciclajes(puntos)
+export function getNivelParaPuntos(puntos = 0): Nivel {
+  return getNivelParaReciclajes(puntos)
 }
 
-export function getProximoRango(puntos = 0): Rango | null {
-  return getProximoRangoPorReciclajes(puntos)
+export function getProximoNivel(puntos = 0): Nivel | null {
+  return getProximoNivelPorReciclajes(puntos)
 }
 
-export interface ResumenRango {
-  actual: Rango
-  proximo: Rango | null
+export interface ResumenNivel {
+  actual: Nivel
+  proximo: Nivel | null
   progreso: number
   puntosFaltantes: number
 }
 
-export function getResumenRango(puntos: number): ResumenRango {
-  const resumen = getResumenRangoPorReciclajes(puntos)
+export function getResumenNivel(puntos: number): ResumenNivel {
+  const resumen = getResumenNivelPorReciclajes(puntos)
   return {
     actual: resumen.actual,
     proximo: resumen.proximo,

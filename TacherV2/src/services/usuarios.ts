@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from 'src/firebase'
 import { validarNombreUsuario } from 'src/domain/nombreUsuario'
-import { RANGOS } from 'src/domain/rangos'
+import { NIVELES } from 'src/domain/niveles'
 import type { FlowData, Usuario } from 'src/types'
 
 const COLECCION_USUARIOS = 'USUARIOS'
@@ -96,7 +96,7 @@ export async function registrarPerfil(
     Proveedor: datos.proveedor ?? 'email',
     FechaRegistro: new Date().toISOString(),
     Puntos: 0,
-    Rango: RANGOS[0].name,
+    Rango: NIVELES[0].name,
     reciclajes: 0,
   }
   const clave = claveDeNombre(nombre)
@@ -156,8 +156,8 @@ export function escucharUsuario(
   )
 }
 
-export function actualizarRango(uid: string, rango: string): Promise<void> {
-  return updateDoc(perfilRef(uid), { Rango: rango })
+export function actualizarNivel(uid: string, nivel: string): Promise<void> {
+  return updateDoc(perfilRef(uid), { Rango: nivel })
 }
 
 /**

@@ -166,9 +166,10 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  // Mismos colores que la pastilla de puntos de cada canje
   chip: {
     borderRadius: RADIOS.pildora,
-    backgroundColor: COLORES.aviso50,
+    backgroundColor: COLORES.suave,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
@@ -176,7 +177,7 @@ const estilos = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '800',
-    color: COLORES.avisoOscuro,
+    color: COLORES.principalOscuro,
   },
   imagenContenedor: {
     width: 52,

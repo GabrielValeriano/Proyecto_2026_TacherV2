@@ -4,7 +4,7 @@
     "slug": "TacherV2",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/LogoTacherV2.jpeg",
     "scheme": "com.tacherv2.app",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": [
@@ -18,8 +18,8 @@
       "package": "com.tacherv2.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/LogoTacherV2.jpeg",
+        "backgroundColor": "#1b4332"
       }
     },
     "web": {
@@ -32,9 +32,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash.png",
+          "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#1b4332",
+          "imageWidth": 120
         }
       ],
       "expo-status-bar",

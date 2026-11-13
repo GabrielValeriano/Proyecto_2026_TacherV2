@@ -36,7 +36,7 @@ export interface Usuario {
   FechaRegistro: string
   Puntos: number
   Rango: string
-  /** Cantidad de reciclajes: la suma la caja (ServerNuevo.js). De acá sale el rango. */
+  /** Cantidad de reciclajes: la suma la caja (ServerNuevo.js). De acá sale el nivel. */
   reciclajes?: number
 }
 

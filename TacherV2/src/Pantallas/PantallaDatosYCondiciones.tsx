@@ -107,11 +107,11 @@ export function PantallaDatosYCondiciones() {
 
         <Seccion
           icono={Coins}
-          titulo="3. Puntos y rangos"
+          titulo="3. Puntos y niveles"
           parrafos={[
             'Los puntos se acreditan únicamente cuando la caja recicladora valida el DNI y el residuo. No se otorgan puntos por ingresos manuales ni por fuera del circuito de reciclaje.',
             'Los puntos no tienen valor monetario, no son transferibles y no pueden canjearse por dinero. Sirven exclusivamente para acceder a los productos disponibles en el kiosco de la escuela.',
-            'Los rangos se calculan automáticamente según los puntos acumulados y pueden cambiar si se corrigen errores en el registro de reciclajes.',
+            'Los niveles se calculan automáticamente según la cantidad de reciclajes y pueden cambiar si se corrigen errores en el registro de reciclajes.',
           ]}
         />
 
@@ -144,7 +144,7 @@ export function PantallaDatosYCondiciones() {
           icono={Lock}
           titulo="6. Datos personales"
           parrafos={[
-            'Recopilamos los datos necesarios para que el servicio funcione: nombre de usuario, correo electrónico, DNI vinculado, puntos, rango, historial de reciclajes y canjes.',
+            'Recopilamos los datos necesarios para que el servicio funcione: nombre de usuario, correo electrónico, DNI vinculado, puntos, nivel, historial de reciclajes y canjes.',
             'El DNI se usa exclusivamente para identificarte cuando la caja recicladora lee tu documento. No se comparte con terceros ajenos a la institución.',
             'Los datos se almacenan en Firebase (Google) con medidas razonables de seguridad. No vendemos ni cedemos tus datos con fines publicitarios.',
             'Podés solicitar la corrección o eliminación de tus datos a través de la administración de la escuela. Si eliminás tu cuenta, se pierden los puntos y los canjes pendientes.',

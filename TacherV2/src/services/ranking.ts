@@ -1,6 +1,6 @@
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from 'src/firebase'
-import { RANGOS } from 'src/domain/rangos'
+import { NIVELES } from 'src/domain/niveles'
 
 const COLECCION_USUARIOS = 'USUARIOS'
 
@@ -10,7 +10,7 @@ export interface PuestoRanking {
   reciclajes: number
   cantidad?: number
   puntos: number
-  rango: string
+  nivel: string
 }
 
 export async function obtenerTopRecicladores(limite = 50): Promise<PuestoRanking[]> {
@@ -26,14 +26,14 @@ export async function obtenerTopRecicladores(limite = 50): Promise<PuestoRanking
       const reciclajes = Number(datos.reciclajes ?? datos.Reciclajes ?? 0) || 0
       const puntos = Number(datos.Puntos ?? datos.puntos ?? 0) || 0
       const nombre = String(datos.Nombre ?? datos.nombre ?? 'Usuario')
-      const rango = String(datos.Rango ?? datos.rango ?? RANGOS[0].name)
+      const nivel = String(datos.Rango ?? datos.rango ?? NIVELES[0].name)
       return {
         id: docSnap.id,
         nombre,
         reciclajes,
         cantidad: reciclajes,
         puntos,
-        rango,
+        nivel,
         _indice: indice,
       }
     })

@@ -32,10 +32,12 @@ export function CabeceraHistorial({ icono: Icono, etiqueta, titulo, descripcion,
 
         <View style={estilos.cabecera}>
           <View style={estilos.icono}>
-            <Icono size={24} color={COLORES.oscuro} />
+            <Icono size={24} color={COLORES.verde700} />
           </View>
           <View style={estilos.textos}>
-            <Text style={estilos.etiqueta}>{etiqueta}</Text>
+            <View style={estilos.etiquetaPastilla}>
+              <Text style={estilos.etiqueta}>{etiqueta}</Text>
+            </View>
             <Text style={estilos.titulo} accessibilityRole="header">
               {titulo}
             </Text>
@@ -105,19 +107,27 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RADIOS.medio,
-    backgroundColor: COLORES.acento,
+    backgroundColor: COLORES.verde300,
   },
   textos: {
     flex: 1,
     gap: 2,
   },
+  etiquetaPastilla: {
+    alignSelf: 'flex-start',
+    borderRadius: RADIOS.pildora,
+    backgroundColor: COLORES.verde300,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
   etiqueta: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: COLORES.acento,
+    // Verde oscuro (no verde700) para que el texto chico se lea bien sobre el verde300
+    color: COLORES.oscuro,
   },
   titulo: {
     fontSize: 26,

@@ -16,14 +16,14 @@ import { Encabezado } from 'src/components/Encabezado'
 import { MensajeExito } from 'src/components/MensajeExito'
 import { ModalCerrarSesion } from 'src/components/ModalCerrarSesion'
 import { useApp } from 'src/context/AppContext'
-import { getResumenRangoPorReciclajes } from 'src/domain/rangos'
+import { getResumenNivelPorReciclajes } from 'src/domain/niveles'
 import { useNavegacionPestañas } from 'src/hooks/useNavegacionPestañas'
 import { COLORES, SOMBRAS } from 'src/theme'
 import { inicialesDe } from 'src/utils/iniciales'
 
 
-/** El rango se guarda sin tilde ("Arbol"); acá se muestra bien escrito. */
-const nombreDeRango = (nombre: string) => (nombre === 'Arbol' ? 'Árbol' : nombre)
+/** El nivel se guarda sin tilde ("Arbol"); acá se muestra bien escrito. */
+const nombreDeNivel = (nombre: string) => (nombre === 'Arbol' ? 'Árbol' : nombre)
 
 const formatear = (numero: number) => numero.toLocaleString('es-AR')
 
@@ -49,57 +49,60 @@ function Avatar({ nombre }: { nombre: string }) {
 
 
 // ---------------------------------------------------------------------------
-// Tarjetas de resumen: el rango (sale de los reciclajes) y los puntos (para canjear)
+// Tarjetas de resumen: el nivel (sale de los reciclajes) y los puntos (para canjear)
 // van separados para que no se confunda una cosa con la otra.
 // ---------------------------------------------------------------------------
 
 
-interface TarjetaRangoProps {
-  nombreRango: string
-  IconoRango: LucideIcon
+interface TarjetaNivelProps {
+  nombreNivel: string
+  IconoNivel: LucideIcon
   reciclajes: number
 }
 
-/** Rango y reciclajes: clara. */
-function TarjetaRango({ nombreRango, IconoRango, reciclajes }: TarjetaRangoProps) {
+/** Nivel y reciclajes. */
+function TarjetaNivel({ nombreNivel, IconoNivel, reciclajes }: TarjetaNivelProps) {
   return (
     <View style={[estilos.tarjeta, estilos.tarjetaClara]}>
       <View style={estilos.tarjetaFila}>
         <View style={[estilos.tarjetaIcono, estilos.iconoSobreClaro]}>
-          <IconoRango size={22} color={COLORES.verde700} />
+          <IconoNivel size={22} color={COLORES.verde700} />
         </View>
         <View style={estilos.tarjetaDatos}>
-          <Text style={estilos.etiqueta}>Rango</Text>
+          <Text style={estilos.etiqueta}>Nivel</Text>
           <Text style={estilos.valorClaro} numberOfLines={1} adjustsFontSizeToFit>
-            {nombreRango}
+            {nombreNivel}
           </Text>
           <Text style={estilos.detalleClaro} numberOfLines={1} adjustsFontSizeToFit>
             {formatear(reciclajes)} {reciclajes === 1 ? 'reciclaje' : 'reciclajes'}
           </Text>
         </View>
       </View>
-      <Text style={estilos.subtituloClaro}>Tus beneficios son de nivel {nombreRango}</Text>
+      <Text style={estilos.subtituloClaro}>Tus beneficios son de nivel {nombreNivel}</Text>
     </View>
   )
 }
 
 /** Puntos para canjear: oscura. */
+/** Puntos para canjear: mismo estilo que la tarjeta de nivel, para que las dos combinen. */
 function TarjetaPuntos({ puntos }: { puntos: number }) {
   return (
-    <View style={[estilos.tarjeta, estilos.tarjetaOscura]}>
-      <View style={estilos.circuloDecorativo} />
+    <View style={[estilos.tarjeta, estilos.tarjetaClara]}>
       <View style={estilos.tarjetaFila}>
-        <View style={[estilos.tarjetaIcono, estilos.iconoSobreOscuro]}>
-          <Coins size={22} color={COLORES.oscuro} />
+        <View style={[estilos.tarjetaIcono, estilos.iconoSobreClaro]}>
+          <Coins size={22} color={COLORES.verde700} />
         </View>
         <View style={estilos.tarjetaDatos}>
-          <Text style={[estilos.etiqueta, estilos.etiquetaSobreOscuro]}>Puntos</Text>
-          <Text style={estilos.valorOscuro} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={estilos.etiqueta}>Puntos</Text>
+          <Text style={estilos.valorClaro} numberOfLines={1} adjustsFontSizeToFit>
             {formatear(puntos)}
+          </Text>
+          <Text style={estilos.detalleClaro} numberOfLines={1} adjustsFontSizeToFit>
+            disponibles
           </Text>
         </View>
       </View>
-      <Text style={estilos.subtituloOscuro}>Disponibles para canjear</Text>
+      <Text style={estilos.subtituloClaro}>Canjealos por productos del kiosco</Text>
     </View>
   )
 }
@@ -169,10 +172,10 @@ export function PantallaPerfil() {
   const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false)
 
   const puntos = Number(userData?.Puntos) || 0
-  // El rango sale de los reciclajes, igual que en el Home
+  // El nivel sale de los reciclajes, igual que en el Home
   const reciclajes = Math.max(0, Number(userData?.reciclajes) || 0)
-  const resumenRango = getResumenRangoPorReciclajes(reciclajes)
-  const nombreRango = nombreDeRango(resumenRango.actual.name)
+  const resumenNivel = getResumenNivelPorReciclajes(reciclajes)
+  const nombreNivel = nombreDeNivel(resumenNivel.actual.name)
   const nombre = userData?.Nombre || 'Usuario'
 
   const handleAbrirCerrarSesion = () => {
@@ -203,9 +206,9 @@ export function PantallaPerfil() {
         </View>
 
         <View style={estilos.resumen}>
-          <TarjetaRango
-            nombreRango={nombreRango}
-            IconoRango={resumenRango.actual.icon}
+          <TarjetaNivel
+            nombreNivel={nombreNivel}
+            IconoNivel={resumenNivel.actual.icon}
             reciclajes={reciclajes}
           />
           <TarjetaPuntos puntos={puntos} />
@@ -311,18 +314,6 @@ const estilos = StyleSheet.create({
    borderColor: COLORES.linea,
    backgroundColor: COLORES.blanco,
  },
- tarjetaOscura: {
-   backgroundColor: COLORES.oscuro,
- },
- circuloDecorativo: {
-   position: 'absolute',
-   top: -50,
-   right: -45,
-   width: 120,
-   height: 120,
-   borderRadius: 60,
-   backgroundColor: 'rgba(255,255,255,0.06)',
- },
  tarjetaFila: {
    flexDirection: 'row',
    alignItems: 'center',
@@ -338,9 +329,6 @@ const estilos = StyleSheet.create({
  iconoSobreClaro: {
    backgroundColor: COLORES.suave,
  },
- iconoSobreOscuro: {
-   backgroundColor: COLORES.acento,
- },
  tarjetaDatos: {
    flex: 1,
  },
@@ -351,9 +339,6 @@ const estilos = StyleSheet.create({
    letterSpacing: 0.6,
    textTransform: 'uppercase',
    color: COLORES.textoSuave,
- },
- etiquetaSobreOscuro: {
-   color: COLORES.sobreOscuro,
  },
  valorClaro: {
    fontSize: 20,
@@ -368,13 +353,6 @@ const estilos = StyleSheet.create({
    fontWeight: '600',
    color: COLORES.verde700,
  },
- valorOscuro: {
-   fontSize: 28,
-   lineHeight: 34,
-   fontWeight: '800',
-   letterSpacing: -1,
-   color: COLORES.blanco,
- },
  subtituloClaro: {
    marginTop: 'auto',
    borderTopWidth: 1,
@@ -383,15 +361,6 @@ const estilos = StyleSheet.create({
    fontSize: 12,
    lineHeight: 16,
    color: COLORES.textoSuave,
- },
- subtituloOscuro: {
-   marginTop: 'auto',
-   borderTopWidth: 1,
-   borderTopColor: 'rgba(255,255,255,0.12)',
-   paddingTop: 10,
-   fontSize: 12,
-   lineHeight: 16,
-   color: COLORES.sobreOscuro,
  },
 
 

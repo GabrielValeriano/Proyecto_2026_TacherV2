@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { Check, Lock, MapPin } from 'lucide-react-native'
 import { CirculoMarca } from 'src/components/CirculoMarca'
 import { BENEFICIOS } from 'src/domain/beneficios'
-import { getResumenRangoPorReciclajes, RANGOS, type Rango } from 'src/domain/rangos'
+import { getResumenNivelPorReciclajes, NIVELES, type Nivel } from 'src/domain/niveles'
 import { COLORES, RADIOS, SOMBRAS } from 'src/theme'
 
 type EstadoPaso = 'completado' | 'actual' | 'pendiente'
@@ -13,18 +13,18 @@ const TAMANIO_ICONO = 46
 const formatear = (numero: number) => numero.toLocaleString('es-AR')
 const plural = (n: number, palabra: string) => `${formatear(n)} ${palabra}${n === 1 ? '' : 's'}`
 
-/** El rango se guarda sin tilde ("Arbol"); acá se muestra bien escrito. */
-const nombreDeRango = (nombre: string) => (nombre === 'Arbol' ? 'Árbol' : nombre)
+/** El nivel se guarda sin tilde ("Arbol"); acá se muestra bien escrito. */
+const nombreDeNivel = (nombre: string) => (nombre === 'Arbol' ? 'Árbol' : nombre)
 
 /**
- * Los rangos de arriba hacia abajo, como un camino: cada paso con su ícono, desde cuántos
- * reciclajes se llega y qué beneficio da. Lo ya conseguido en verde, el rango actual destacado
+ * Los niveles de arriba hacia abajo, como un camino: cada paso con su ícono, desde cuántos
+ * reciclajes se llega y qué beneficio da. Lo ya conseguido en verde, el nivel actual destacado
  * (con lo que falta para el siguiente) y lo que falta, apagado y con candado.
  */
-export function CaminoDeRangos({ reciclajes }: { reciclajes: number }) {
+export function CaminoDeNiveles({ reciclajes }: { reciclajes: number }) {
   const cantidad = Math.max(0, Number(reciclajes) || 0)
-  const resumen = getResumenRangoPorReciclajes(cantidad)
-  const indiceActual = RANGOS.indexOf(resumen.actual)
+  const resumen = getResumenNivelPorReciclajes(cantidad)
+  const indiceActual = NIVELES.indexOf(resumen.actual)
 
   return (
     <View style={estilos.tarjeta}>
@@ -33,21 +33,21 @@ export function CaminoDeRangos({ reciclajes }: { reciclajes: number }) {
           Tu camino de beneficios
         </Text>
         <Text style={estilos.subtitulo}>
-          Cada rango desbloquea un beneficio nuevo en el kiosco. Llevás{' '}
+          Cada nivel desbloquea un beneficio nuevo en el kiosco. Llevás{' '}
           <Text style={estilos.subtituloFuerte}>{plural(cantidad, 'reciclaje')}</Text>.
         </Text>
       </View>
 
       <View>
-        {RANGOS.map((rango, indice) => {
+        {NIVELES.map((nivel, indice) => {
           const estado: EstadoPaso =
             indice < indiceActual ? 'completado' : indice === indiceActual ? 'actual' : 'pendiente'
           return (
             <Paso
-              key={rango.name}
-              rango={rango}
+              key={nivel.name}
+              nivel={nivel}
               estado={estado}
-              esUltimo={indice === RANGOS.length - 1}
+              esUltimo={indice === NIVELES.length - 1}
               reciclajes={cantidad}
               progreso={estado === 'actual' ? resumen.progreso : 0}
               proximo={estado === 'actual' ? resumen.proximo : null}
@@ -60,19 +60,19 @@ export function CaminoDeRangos({ reciclajes }: { reciclajes: number }) {
 }
 
 interface PasoProps {
-  rango: Rango
+  nivel: Nivel
   estado: EstadoPaso
   esUltimo: boolean
   reciclajes: number
-  /** Solo para el rango actual: avance hacia el siguiente (0-100). */
+  /** Solo para el nivel actual: avance hacia el siguiente (0-100). */
   progreso: number
-  proximo: Rango | null
+  proximo: Nivel | null
 }
 
-function Paso({ rango, estado, esUltimo, reciclajes, progreso, proximo }: PasoProps) {
-  const Icono = rango.icon
-  const beneficio = BENEFICIOS.find((b) => b.id === rango.name)
-  const faltan = Math.max(0, rango.min - reciclajes)
+function Paso({ nivel, estado, esUltimo, reciclajes, progreso, proximo }: PasoProps) {
+  const Icono = nivel.icon
+  const beneficio = BENEFICIOS.find((b) => b.id === nivel.name)
+  const faltan = Math.max(0, nivel.min - reciclajes)
   const actual = estado === 'actual'
   const pendiente = estado === 'pendiente'
 
@@ -80,9 +80,9 @@ function Paso({ rango, estado, esUltimo, reciclajes, progreso, proximo }: PasoPr
     <View
       style={estilos.paso}
       accessible
-      accessibilityLabel={`${nombreDeRango(rango.name)}, desde ${plural(rango.min, 'reciclaje')}. ${
+      accessibilityLabel={`${nombreDeNivel(nivel.name)}, desde ${plural(nivel.min, 'reciclaje')}. ${
         beneficio?.titulo ?? ''
-      }. ${actual ? 'Tu rango actual' : pendiente ? `Te faltan ${plural(faltan, 'reciclaje')}` : 'Desbloqueado'}`}
+      }. ${actual ? 'Tu nivel actual' : pendiente ? `Te faltan ${plural(faltan, 'reciclaje')}` : 'Desbloqueado'}`}
     >
       {/* Columna izquierda: ícono y la línea que lo une con el siguiente */}
       <View style={estilos.columnaIcono}>
@@ -105,15 +105,15 @@ function Paso({ rango, estado, esUltimo, reciclajes, progreso, proximo }: PasoPr
         )}
       </View>
 
-      {/* Columna derecha: datos del rango */}
+      {/* Columna derecha: datos del nivel */}
       <View style={[estilos.detalle, actual && estilos.detalleActual, !esUltimo && estilos.detalleConEspacio]}>
         <View style={estilos.detalleFila}>
-          <Text style={[estilos.nombre, pendiente && estilos.textoApagado]}>{nombreDeRango(rango.name)}</Text>
+          <Text style={[estilos.nombre, pendiente && estilos.textoApagado]}>{nombreDeNivel(nivel.name)}</Text>
           <Estado estado={estado} faltan={faltan} />
         </View>
 
         <Text style={[estilos.requisito, pendiente && estilos.textoApagado]}>
-          {rango.min === 0 ? 'Desde tu primer reciclaje' : `Desde ${plural(rango.min, 'reciclaje')}`}
+          {nivel.min === 0 ? 'Desde tu primer reciclaje' : `Desde ${plural(nivel.min, 'reciclaje')}`}
         </Text>
 
         {beneficio && (
@@ -136,8 +136,8 @@ function Paso({ rango, estado, esUltimo, reciclajes, progreso, proximo }: PasoPr
             </View>
             <Text style={estilos.progresoTexto}>
               {proximo
-                ? `Te faltan ${plural(Math.max(0, proximo.min - reciclajes), 'reciclaje')} para ${nombreDeRango(proximo.name)}`
-                : '¡Llegaste al rango máximo!'}
+                ? `Te faltan ${plural(Math.max(0, proximo.min - reciclajes), 'reciclaje')} para ${nombreDeNivel(proximo.name)}`
+                : '¡Llegaste al nivel máximo!'}
             </Text>
           </View>
         )}
@@ -261,7 +261,7 @@ const estilos = StyleSheet.create({
   detalleConEspacio: {
     marginBottom: 16,
   },
-  // El rango actual va en su propia tarjetita para que se vea de un vistazo
+  // El nivel actual va en su propia tarjetita para que se vea de un vistazo
   detalleActual: {
     borderRadius: RADIOS.medio,
     borderWidth: 1.5,
@@ -350,7 +350,7 @@ const estilos = StyleSheet.create({
     color: COLORES.gris600,
   },
 
-  // --- Progreso hacia el siguiente rango (solo en el actual)
+  // --- Progreso hacia el siguiente nivel (solo en el actual)
   progreso: {
     marginTop: 8,
     gap: 6,
